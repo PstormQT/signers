@@ -9,6 +9,6 @@ package SQL_java;
 
 public record CREDENTIAL() {
     public static final String DBLink = "jdbc:postgresql://127.0.0.1:5432/p32001_05";
-    public static final String USERNAME = "put your username here";
-    public static final String PASSWORD = "put your password here";
+    public static final String USERNAME = "A";
+    public static final String PASSWORD = "B";
 }
