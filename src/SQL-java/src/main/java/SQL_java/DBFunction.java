@@ -12,7 +12,7 @@ public class DBFunction{
     public DBFunction() {
         try {
             Class.forName("org.postgresql.Driver");
-            this.connection = DriverManager.getConnection(CREDENTIAL.DBLink, CREDENTIAL.USERNAME, CREDENTIAL.PASSWORD);
+            this.connection = DriverManager.getConnection(abc.DBLink, abc.USERNAME, abc.PASSWORD);
             if (connection == null) {
                 throw new Exception("Error connecting to the database");
             }
