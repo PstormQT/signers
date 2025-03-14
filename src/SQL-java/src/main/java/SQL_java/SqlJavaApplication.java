@@ -1,13 +1,13 @@
-package Signer;
+package SQL_java;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class SignerApplication {
+public class SqlJavaApplication {
 
 	public static void main(String[] args) {
-		SpringApplication.run(SignerApplication.class, args);
+		SpringApplication.run(SqlJavaApplication.class, args);
 	}
 
 }
