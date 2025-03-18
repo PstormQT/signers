@@ -36,11 +36,15 @@ public class DBFunction{
 
     public void testAccessData(String table_name){
         Statement statement;
+        ResultSet results;
         try {
             String query = "SELECT * FROM " + table_name ;
             statement = this.connection.createStatement();
-            statement.executeQuery(query);
-            System.err.println(statement);
+            results = statement.executeQuery(query);
+            for (int i = 0; i < 10; i++){
+                results.next();
+                System.out.println(results.getString("username"));
+            }
         } catch (Exception e) {
             System.out.println(e);
         }
