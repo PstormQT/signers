@@ -1,5 +1,5 @@
 package SQL_java;
 
-public class login {
+public class Login{
     
 }
