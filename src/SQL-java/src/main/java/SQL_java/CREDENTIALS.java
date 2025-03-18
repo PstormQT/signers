@@ -1,14 +1,14 @@
 package SQL_java;
 /**
  
-Please before asking why the connection is not establish, EDIT THIS PAGE
-to reflect the current password. I will add this file in .gitignore after first init so don't worry
-Also REMEMBER to rename THIS FILE to abc.java so that the .gitignore actualy works
+Before asking why the connection is not established, EDIT THIS PAGE
+    to reflect your RIT Username and Password, and rename this file to 'abc.java'
+This file is included in .gitignore under 'abc.java', so don't accidentally publish your RIT credentials, thanks
 */
 
 
 public record abc() {
     public static final String DBLink = "jdbc:postgresql://127.0.0.1:5432/p32001_05";
-    public static final String USERNAME = "ptd7904";
-    public static final String PASSWORD = "A";
+    public static final String USERNAME = "X";
+    public static final String PASSWORD = "Y";
 }
