@@ -4,6 +4,12 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
 
+
+/**
+ * This class is AS OF CURRENT not needed. May delete later
+ * keeping around just in case
+ */
+
 /**
  * A class for handling all login queries
  * @author

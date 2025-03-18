@@ -8,7 +8,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 
 
-/*
+/**
  * This is our class to access and interact with the Database. 
  * Any method/function that directly accesses the Database will and should be in here
  *      with VERY FEW EXCEPTIONS
@@ -47,7 +47,7 @@ public class DBFunction{
     }
 
 
-    /*
+    /**
      * Retrieves an existing User's id, username, and password, and creates a User object
      * We were going to have a class for this, but anything that accesses the DB should be done in this class
      *  for ease of use and simplicity
