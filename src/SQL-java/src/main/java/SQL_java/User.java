@@ -29,4 +29,9 @@ public class User {
         return password;
     }
 
+    @Override
+    public String toString(){
+        return "ID: "+id+"\nUsername: "+username+"\nPassword: "+password; 
+    }
+
 }

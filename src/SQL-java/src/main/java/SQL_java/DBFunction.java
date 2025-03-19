@@ -63,10 +63,9 @@ public class DBFunction{
         Statement statement;
         ResultSet results;
         try{
-        String query = "SELECT  FROM users WHERE username='"+username+"'' AND password='"+password+"'";
+        String query = "SELECT * FROM users WHERE username='"+username+"' AND password='"+password+"'";
         statement = this.connection.createStatement();
         results = statement.executeQuery(query);
-        System.err.println(statement);
         if (results.next()){
             return new User(results.getInt("user_id"), results.getString("username"),
                                    results.getString("password"));
@@ -84,7 +83,8 @@ public class DBFunction{
 
     public static void main(String[] args) {
         DBFunction test = new DBFunction();
-        test.testAccessData("Users");
+        User testUser = test.login("ahunn0", "dI1++ahs$Vqp");
+        System.out.println(testUser);
     }
 
 
