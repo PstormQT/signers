@@ -66,19 +66,20 @@ public class DBFunction{
      * @author Brandon Yi
      */
     public User login(String username, String password){
-        Statement statement;
         ResultSet results;
         try{
-        String query = "SELECT user_id,username,password FROM users WHERE username='"+username+"' AND password='"+password+"'";
-        statement = this.connection.createStatement();
-        results = statement.executeQuery(query);
+        String query = "SELECT user_id,username,password FROM users WHERE username=? AND password=?";
+        PreparedStatement pdst = connection.prepareStatement(query);
+        pdst.setString(1, username);
+        pdst.setString(2, password);
+        results = pdst.executeQuery();
         if (results.next()){
             query = "UPDATE users SET last_login_date = ? WHERE username = ? AND password = ?";
-            PreparedStatement pdst = connection.prepareStatement(query);
-            pdst.setDate(1, currentDate);
-            pdst.setString(2, username);
-            pdst.setString(3, password);
-            pdst.executeUpdate();
+            PreparedStatement pdstII = connection.prepareStatement(query);
+            pdstII.setDate(1, currentDate);
+            pdstII.setString(2, username);
+            pdstII.setString(3, password);
+            pdstII.executeUpdate();
             return new User(results.getInt("user_id"), results.getString("username"),
                                    results.getString("password"));
         }
@@ -165,7 +166,7 @@ public class DBFunction{
 
     public static void main(String[] args) {
         DBFunction test = new DBFunction();
-        User testUser = test.createUser("MasterFaster", "RDA", "Jack", "Atlas", "resonator@dingus.com");
+        User testUser = test.login("MasterFaster", "RDA");
         System.out.println(testUser);
         System.out.println(test.closeConnection());
     }
