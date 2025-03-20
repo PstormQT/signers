@@ -25,6 +25,7 @@ public class DBFunction{
     private java.util.Date utilDate = new java.util.Date();
     private java.sql.Date currentDate;
     private Session session = null;
+    public static final String DBNAME = "p32001_05";
 
     public Connection getConnection(){
         return connection;
@@ -38,7 +39,7 @@ public class DBFunction{
         int rport = 5432;
         String user = abc.USERNAME; //change to your username
         String password = abc.PASSWORD; //change to your password
-        String databaseName = abc.DBNAME; //change to your database name
+        String databaseName = DBNAME; //change to your database name
 
         String driverName = "org.postgresql.Driver";
         
@@ -232,7 +233,9 @@ public class DBFunction{
         ArrayList<User> a = test.lookUpByEmail("ahowood1e@dagondesign.co");
 
         for(User user : a){
-            System.out.println(user.getId() + user.getPassword() + user.getUsername());
+            System.out.println(user.getId());
+            System.out.println(user.getUsername());
+            System.out.println(user.getPassword());
         }
 
 
