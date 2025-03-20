@@ -38,6 +38,7 @@ public class DBFunction{
         }
     }
 
+    /*
     public ResultSet selectExec(PreparedStatement pdst){
         if(connection == null){
             try {
@@ -63,7 +64,9 @@ public class DBFunction{
         }
 
     }
+        */
 
+        /* 
     public int updateExec(PreparedStatement pdst){
         if(connection == null){
             try {
@@ -88,6 +91,7 @@ public class DBFunction{
             }
         }
     }
+        */
 
 
     public void testAccessData(String table_name){
@@ -117,24 +121,22 @@ public class DBFunction{
      * @author Brandon Yi
      */
     public User login(String username, String password){
-        ResultSet results;
-        try{
+        ResultSet results = null;
         String query = "SELECT user_id,username,password FROM users WHERE username=? AND password=?";
-        PreparedStatement pdst = connection.prepareStatement(query);
+        try( PreparedStatement pdst = connection.prepareStatement(query);){
         pdst.setString(1, username);
         pdst.setString(2, password);
-        results = selectExec(pdst);
-        closeConnection();
+        results = pdst.executeQuery();
         if (results.next()){
             query = "UPDATE users SET last_login_date = ? WHERE username = ? AND password = ?";
-            PreparedStatement pdstII = connection.prepareStatement(query);
-            pdstII.setDate(1, currentDate);
-            pdstII.setString(2, username);
-            pdstII.setString(3, password);
-            updateExec(pdstII);
-            closeConnection();         
-            return new User(results.getInt("user_id"), results.getString("username"),
-                                   results.getString("password"));
+            try(PreparedStatement pdstII = connection.prepareStatement(query);){
+                pdstII.setDate(1, currentDate);
+                pdstII.setString(2, username);
+                pdstII.setString(3, password);
+                pdstII.executeUpdate();    
+                return new User(results.getInt("user_id"), results.getString("username"),
+                                    results.getString("password"));
+            }
         }
         else{
             return null;
@@ -143,6 +145,14 @@ public class DBFunction{
         catch (SQLException e) {
             System.out.println(e);
             return null;
+        }
+        finally{
+            try{
+            if(results != null){results.close();}
+            }
+            catch(Exception e){
+                System.out.println(e);
+            }
         }
        
     }
@@ -159,10 +169,9 @@ public class DBFunction{
      * @return A user if successfully created, null if otherwise
      */
     public User createUser(String username, String password, String fname, String lname, String email){
-        ResultSet results;
-        try{
-            String query = "INSERT INTO users (password,creation_date,last_login_date,email,username,fname,lname) VALUES (?,?,?,?,?,?,?)";
-            PreparedStatement pdst = connection.prepareStatement(query);
+        ResultSet results = null;
+        String query = "INSERT INTO users (password,creation_date,last_login_date,email,username,fname,lname) VALUES (?,?,?,?,?,?,?)";
+        try(PreparedStatement pdst = connection.prepareStatement(query);){
             pdst.setString(1, password);
             pdst.setDate(2, currentDate);
             pdst.setDate(3, currentDate);
@@ -170,17 +179,14 @@ public class DBFunction{
             pdst.setString(5, username);
             pdst.setString(6, fname);
             pdst.setString(7, lname);
-            int rowsAffected = updateExec(pdst);
-            closeConnection();
+            int rowsAffected = pdst.executeUpdate();
             System.out.println(rowsAffected);
             if(rowsAffected == 1){
-                try{
-                    String query2 = "SELECT user_id,username,password FROM users WHERE username = ? AND password = ?";
-                    PreparedStatement pdstII = connection.prepareStatement(query2);
+                String query2 = "SELECT user_id,username,password FROM users WHERE username = ? AND password = ?";
+                try(PreparedStatement pdstII = connection.prepareStatement(query2);){
                     pdstII.setString(1, username);
                     pdstII.setString(2, password);
-                    results = selectExec(pdstII);
-                    closeConnection();
+                    results = pdstII.executeQuery();
                     if (results.next()){
                         return new User(results.getInt("user_id"), results.getString("username"),
                                                results.getString("password"));
@@ -198,6 +204,14 @@ public class DBFunction{
         catch(SQLException e){
             System.out.println(e);
             return null;
+        }
+        finally{
+            try{
+                if (results != null) {results.close();}
+            }
+            catch(Exception e){
+                System.out.println(e);
+            }
         }
     }
 
@@ -221,7 +235,7 @@ public class DBFunction{
 
     public static void main(String[] args) {
         DBFunction test = new DBFunction();
-        User testUser = test.login("MasterFaster", "RDA");
+        User testUser = test.createUser("MindSculptor", "Loot1234", "Jace", "Beleren", "Blue@vryn.plane");
         System.out.println(testUser);
         System.out.println(test.closeConnection());
     }
