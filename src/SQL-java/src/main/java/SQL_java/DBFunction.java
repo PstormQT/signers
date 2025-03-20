@@ -38,6 +38,57 @@ public class DBFunction{
         }
     }
 
+    public ResultSet selectExec(PreparedStatement pdst){
+        if(connection == null){
+            try {
+                Class.forName("org.postgresql.Driver");
+                this.connection = DriverManager.getConnection(abc.DBLink, abc.USERNAME, abc.PASSWORD);
+                if (connection == null) {
+                    throw new Exception("Error connecting to the database");
+                }
+                currentDate = new Date(utilDate.getTime());
+                return pdst.executeQuery();
+            } catch (Exception e) {
+                System.err.println(e);
+                return null;
+            }
+        }
+        else{
+            try{
+                return pdst.executeQuery();
+            }
+            catch (Exception e){
+                return null;
+            }
+        }
+
+    }
+
+    public int updateExec(PreparedStatement pdst){
+        if(connection == null){
+            try {
+                Class.forName("org.postgresql.Driver");
+                this.connection = DriverManager.getConnection(abc.DBLink, abc.USERNAME, abc.PASSWORD);
+                if (connection == null) {
+                    throw new Exception("Error connecting to the database");
+                }
+                currentDate = new Date(utilDate.getTime());
+                return pdst.executeUpdate();
+            } catch (Exception e) {
+                System.err.println(e);
+                return 0;
+            }
+        }
+        else{
+            try{
+                return pdst.executeUpdate();
+            }
+            catch (Exception e){
+                return 0;
+            }
+        }
+    }
+
 
     public void testAccessData(String table_name){
         Statement statement;
@@ -72,14 +123,16 @@ public class DBFunction{
         PreparedStatement pdst = connection.prepareStatement(query);
         pdst.setString(1, username);
         pdst.setString(2, password);
-        results = pdst.executeQuery();
+        results = selectExec(pdst);
+        closeConnection();
         if (results.next()){
             query = "UPDATE users SET last_login_date = ? WHERE username = ? AND password = ?";
             PreparedStatement pdstII = connection.prepareStatement(query);
             pdstII.setDate(1, currentDate);
             pdstII.setString(2, username);
             pdstII.setString(3, password);
-            pdstII.executeUpdate();
+            updateExec(pdstII);
+            closeConnection();         
             return new User(results.getInt("user_id"), results.getString("username"),
                                    results.getString("password"));
         }
@@ -117,7 +170,8 @@ public class DBFunction{
             pdst.setString(5, username);
             pdst.setString(6, fname);
             pdst.setString(7, lname);
-            int rowsAffected = pdst.executeUpdate();
+            int rowsAffected = updateExec(pdst);
+            closeConnection();
             System.out.println(rowsAffected);
             if(rowsAffected == 1){
                 try{
@@ -125,7 +179,8 @@ public class DBFunction{
                     PreparedStatement pdstII = connection.prepareStatement(query2);
                     pdstII.setString(1, username);
                     pdstII.setString(2, password);
-                    results = pdstII.executeQuery();
+                    results = selectExec(pdstII);
+                    closeConnection();
                     if (results.next()){
                         return new User(results.getInt("user_id"), results.getString("username"),
                                                results.getString("password"));
@@ -150,7 +205,7 @@ public class DBFunction{
 
     /**
      * Closes the connection with the DB server. 
-     * MAKE SURE TO ALWAYS CALL THIS AT END OF MAIN
+     * MAKE SURE TO ALWAYS CALL THIS AT END OF TRANSACTION
      * @return true if close was successful, false if otherwise
      */
     public boolean closeConnection(){
