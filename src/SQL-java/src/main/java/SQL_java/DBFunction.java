@@ -1,5 +1,7 @@
 package SQL_java;
 
+import com.jcraft.jsch.*;
+
 import java.lang.Thread.State;
 import java.lang.reflect.Executable;
 import java.sql.Connection;
@@ -7,6 +9,8 @@ import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.Properties;
 import java.sql.Date;
 import java.sql.PreparedStatement;
 
@@ -20,19 +24,48 @@ public class DBFunction{
     private Connection connection;
     private java.util.Date utilDate = new java.util.Date();
     private java.sql.Date currentDate;
+    private Session session = null;
 
     public Connection getConnection(){
         return connection;
     }
 
     public DBFunction() {
+        this.currentDate = new java.sql.Date(utilDate.getTime());
+        
+        int lport = 5432;
+        String rhost = "starbug.cs.rit.edu";
+        int rport = 5432;
+        String user = abc.USERNAME; //change to your username
+        String password = abc.PASSWORD; //change to your password
+        String databaseName = abc.DBNAME; //change to your database name
+
+        String driverName = "org.postgresql.Driver";
+        
         try {
-            Class.forName("org.postgresql.Driver");
-            this.connection = DriverManager.getConnection(abc.DBLink, abc.USERNAME, abc.PASSWORD);
-            if (connection == null) {
-                throw new Exception("Error connecting to the database");
-            }
-            currentDate = new Date(utilDate.getTime());
+            java.util.Properties config = new java.util.Properties();
+            config.put("StrictHostKeyChecking", "no");
+            JSch jsch = new JSch();
+            session = jsch.getSession(user, rhost, 22);
+            session.setPassword(password);
+            session.setConfig(config);
+            session.setConfig("PreferredAuthentications","publickey,keyboard-interactive,password");
+            session.connect();
+            System.out.println("Connected");
+            int assigned_port = session.setPortForwardingL(lport, "127.0.0.1", rport);
+            System.out.println("Port Forwarded");
+
+            // Assigned port could be different from 5432 but rarely happens
+            String url = "jdbc:postgresql://127.0.0.1:"+ assigned_port + "/" + databaseName;
+
+            System.out.println("database Url: " + url);
+            Properties props = new Properties();
+            props.put("user", user);
+            props.put("password", password);
+
+            Class.forName(driverName);
+            this.connection = DriverManager.getConnection(url, props);
+
         } catch (Exception e) {
             System.err.println(e);
         }
@@ -147,6 +180,26 @@ public class DBFunction{
     }
 
 
+    public ArrayList<User> lookUpByEmail(String email){
+        ResultSet data; 
+        ArrayList<User> returnData = new ArrayList<>();
+        try {
+            String query ="SELECT * FROM users WHERE email=?";
+            PreparedStatement pdst = connection.prepareStatement(query);
+            pdst.setString(1, email);
+            data = pdst.executeQuery();
+            while (data.next()){
+                User user = new User(data.getInt("user_id"), data.getString("username"),
+                data.getString("password"));
+                returnData.add(user);
+            }
+        } catch (Exception e) {
+            System.out.println(e);
+            return null;
+        }
+
+        return returnData;
+    }
 
     /**
      * Closes the connection with the DB server. 
@@ -155,7 +208,14 @@ public class DBFunction{
      */
     public boolean closeConnection(){
         try{
-            connection.close();
+            if (this.connection != null && !this.connection.isClosed()) {
+                System.out.println("Closing Database Connection");
+                this.connection.close();
+            }
+            if (session != null && session.isConnected()) {
+                System.out.println("Closing SSH Connection");
+                session.disconnect();
+            }
             return true;
         }
         catch (Exception e){
@@ -166,10 +226,18 @@ public class DBFunction{
 
     public static void main(String[] args) {
         DBFunction test = new DBFunction();
-        User testUser = test.login("MasterFaster", "RDA");
-        System.out.println(testUser);
+        // User testUser = test.login("MasterFaster", "RDA");
+        // System.out.println(testUser);
+
+        ArrayList<User> a = test.lookUpByEmail("ahowood1e@dagondesign.co");
+
+        for(User user : a){
+            System.out.println(user.getId() + user.getPassword() + user.getUsername());
+        }
+
+
+
         System.out.println(test.closeConnection());
     }
-
 
 }
