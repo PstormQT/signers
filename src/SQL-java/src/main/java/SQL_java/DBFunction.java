@@ -27,10 +27,18 @@ public class DBFunction{
     private Session session = null;
     public static final String DBNAME = "p32001_05";
 
+    /**
+     * Return the current connection to the database
+     * @return
+     */
     public Connection getConnection(){
         return connection;
     }
 
+    /**
+     * Contructor for the connection to the database
+     * Added SSH tunneling to the server
+     */
     public DBFunction() {
         this.currentDate = new java.sql.Date(utilDate.getTime());
         
@@ -73,6 +81,10 @@ public class DBFunction{
     }
 
 
+    /**
+     * Testing the connection to the server
+     * @param table_name
+     */
     public void testAccessData(String table_name){
         Statement statement;
         ResultSet results;
@@ -181,6 +193,11 @@ public class DBFunction{
     }
 
 
+    /**
+     * Query of looking up the user by email
+     * @param email
+     * @return the list of the user match the mail - should be 0 or 1 if I'm not dumb
+     */
     public ArrayList<User> lookUpByEmail(String email){
         ResultSet data; 
         ArrayList<User> returnData = new ArrayList<>();
