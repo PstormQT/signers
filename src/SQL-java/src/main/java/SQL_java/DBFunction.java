@@ -69,7 +69,7 @@ public class DBFunction{
         Statement statement;
         ResultSet results;
         try{
-        String query = "SELECT * FROM users WHERE username='"+username+"' AND password='"+password+"'";
+        String query = "SELECT user_id,username,password FROM users WHERE username='"+username+"' AND password='"+password+"'";
         statement = this.connection.createStatement();
         results = statement.executeQuery(query);
         if (results.next()){
@@ -120,7 +120,7 @@ public class DBFunction{
             System.out.println(rowsAffected);
             if(rowsAffected == 1){
                 try{
-                    String query2 = "SELECT * FROM users WHERE username = ? AND password = ?";
+                    String query2 = "SELECT user_id,username,password FROM users WHERE username = ? AND password = ?";
                     PreparedStatement pdstII = connection.prepareStatement(query2);
                     pdstII.setString(1, username);
                     pdstII.setString(2, password);
@@ -165,7 +165,7 @@ public class DBFunction{
 
     public static void main(String[] args) {
         DBFunction test = new DBFunction();
-        User testUser = test.createUser("decodeVtalker", "Access_Talker", "Brandon", "Yi", "Excode@talker.com");
+        User testUser = test.createUser("MasterFaster", "RDA", "Jack", "Atlas", "resonator@dingus.com");
         System.out.println(testUser);
         System.out.println(test.closeConnection());
     }
