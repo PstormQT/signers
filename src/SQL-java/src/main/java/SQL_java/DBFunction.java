@@ -26,6 +26,7 @@ public class DBFunction{
     private java.util.Date utilDate = new java.util.Date();
     private java.sql.Date currentDate;
     public static final String DBNAME = "p32001_05";
+    private Session session;
 
     public DBFunction() {
         this.currentDate = new java.sql.Date(utilDate.getTime());
@@ -43,7 +44,7 @@ public class DBFunction{
             java.util.Properties config = new java.util.Properties();
             config.put("StrictHostKeyChecking", "no");
             JSch jsch = new JSch();
-            Session session = jsch.getSession(user, rhost, 22);
+            this.session = jsch.getSession(user, rhost, 22);
             session.setPassword(password);
             session.setConfig(config);
             session.setConfig("PreferredAuthentications","publickey,keyboard-interactive,password");
@@ -299,7 +300,14 @@ public class DBFunction{
      */
     public boolean closeConnection(){
         try{
-            connection.close();
+            if (this.connection != null && !this.connection.isClosed()) {
+                System.out.println("Closing Database Connection");
+                this.connection.close();
+            }
+            if (session != null && session.isConnected()) {
+                System.out.println("Closing SSH Connection");
+                session.disconnect();
+            }
             return true;
         }
         catch (Exception e){
@@ -307,6 +315,7 @@ public class DBFunction{
             return false;
         }
     }
+
 
     public static void main(String[] args) {
         DBFunction test = new DBFunction();
