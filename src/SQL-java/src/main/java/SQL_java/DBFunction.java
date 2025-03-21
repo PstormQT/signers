@@ -127,6 +127,42 @@ public class DBFunction{
         }
     }
 
+    /**
+     * 
+     * @param song_id  the ID of the song/album to be deleted from the collection
+     * @param mc_id    the ID of the collection
+     * @param total_time   the total time of the songs in the collection 
+     * @param number_of_songs   the total amount of songs in the collection
+     * @return  a boolean if the collection was created successfully or not 
+     * @author Katie Richardson
+     */
+    public boolean deleteSongFromCollection(Integer song_id, Integer mc_id, Integer total_time, Integer number_of_songs){
+        ResultSet results;
+        try{
+        String query = "DELETE FROM collection_song WHERE song_id = ? AND mc_id = ?";
+        PreparedStatement pdst = connection.prepareStatement(query);
+        pdst.setInt(1, song_id);
+        pdst.setInt(2, mc_id);
+        results = pdst.executeQuery();
+        if (results.next()){
+            query = "UPDATE mc_id SET total_time = ?, number_of_songs = ?";
+            PreparedStatement pdstII = connection.prepareStatement(query);
+            pdstII.setInt(3, total_time);
+            pdstII.setInt(4, number_of_songs);
+            pdstII.executeUpdate();
+            return true;
+        }
+        else{
+            return false;
+        }
+        }
+        catch (SQLException e) {
+            System.out.println(e);
+            return false;
+        }
+    }
+
+
 
     /**
      * Creates a User object based on Parameters
