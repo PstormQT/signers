@@ -150,24 +150,30 @@ public class DBFunction{
     /**
      * Searches music collections by name and prints out list
      * @param name
+     * @param User
+     * @return List of all collection with that name from that user
      * @author Andrew Rosenhaus
      */
-    public void collectionSearch(String name){
+    public List<> collectionSearch(String name, User user){
         ResultSet results;
         try{
-            String query = "SELECT name, number_of_songs, total_time FROM music_collection WHERE LOWER(name) LIKE ? ORDER BY name DESC"
+            String query = "SELECT name, number_of_songs, total_time FROM music_collection WHERE LOWER(name) LIKE ? AND user_id = ? ORDER BY name ASC"
             PreparedStatement pdst = connection.preparedStatement(query);
             pdst.setString(1, name);
+            pdst.setInt(2, user.getId())
             results = pdst.executeQuery();
+            ArrayList<MusicCollection> returnList = new ArrayList<>;
             ResultSetMetaData resultsMetaData = results.getMetaData();
             int numColumns = resultsMetaData.getColumnCount();
-            int numRows = resultsMetaData.get
             while (results.next())
                 while (int j = 1; j <= numColumns; j++){
-                    System.out.println(results.getString(j));
+                    System.out.print(results.getString(j) + ", ");
                 }
+                returnList.add(new MusicCollection(results.getString(1), results.getString(3), results.getString(2)));
+                System.out.println("");
                 results.next();
             }
+            return returnList;
         }
         catch(SQLException e){
             System.out.println(e);
