@@ -163,10 +163,8 @@ public class DBFunction{
             pdst.setInt(2, user.getId());
             results = pdst.executeQuery();
             ArrayList<MusicCollection> returnList = new ArrayList<>();
-            ResultSetMetaData resultsMetaData = results.getMetaData();
-            int numColumns = resultsMetaData.getColumnCount();
             while (results.next())
-                while (int j = 1; j <= numColumns; j++){
+                while (int j = 1; j <= 3; j++){
                     System.out.print(results.getString(j) + ", ");
                 }
                 returnList.add(new MusicCollection(results.getString(1), results.getString(3), results.getString(2)));
