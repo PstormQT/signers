@@ -7,6 +7,7 @@ import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Collection;
 import java.sql.Date;
 import java.sql.PreparedStatement;
 
@@ -92,6 +93,38 @@ public class DBFunction{
             return null;
         }
        
+    }
+
+    /**
+     * 
+     * @param name  the name of the collection
+     * @param total_time   the total time of the songs in the collection 
+     * @param number_of_songs   the total amount of songs in the collection
+     * @param user_id   the id of the user making the collection
+     * @return  a boolean if the collection was created successfully or not 
+     * @author Katie Richardson
+     */
+    public boolean createCollection(String name, Integer total_time, Integer number_of_songs, Integer user_id){
+        ResultSet results;
+        try{
+        String query = "INSERT INTO music_collection (name, total_time, number_of_songs, user_id) VALUES (?,?,?,?)" ;
+        PreparedStatement pdst = connection.prepareStatement(query);
+        pdst.setString(1, name);
+        pdst.setInt(2, total_time);
+        pdst.setInt(3, number_of_songs);
+        pdst.setInt(4, user_id);
+        results = pdst.executeQuery();
+        if (results.next()){
+            return true;
+        }
+        else{
+            return false;
+        }
+        }
+        catch (SQLException e) {
+            System.out.println(e);
+            return false;
+        }
     }
 
 
