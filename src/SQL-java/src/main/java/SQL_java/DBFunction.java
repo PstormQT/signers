@@ -18,6 +18,7 @@ import java.sql.PreparedStatement;
  * This is our class to access and interact with the Database. 
  * Any method/function that directly accesses the Database will and should be in here
  *      with VERY FEW EXCEPTIONS
+ * NOTICE: DISCONNECT FROM DATAGRIP IN THE ORDER FOR THE CODE TO WORK
  */
 public class DBFunction{
 
@@ -27,10 +28,18 @@ public class DBFunction{
     private Session session = null;
     public static final String DBNAME = "p32001_05";
 
+    /**
+     * Return the current connection to the database
+     * @return
+     */
     public Connection getConnection(){
         return connection;
     }
 
+    /**
+     * Contructor for the connection to the database
+     * Added SSH tunneling to the server
+     */
     public DBFunction() {
         this.currentDate = new java.sql.Date(utilDate.getTime());
         
@@ -128,6 +137,10 @@ public class DBFunction{
         */
 
 
+    /**
+     * Testing the connection to the server
+     * @param table_name
+     */
     public void testAccessData(String table_name){
         Statement statement;
         ResultSet results;
@@ -242,6 +255,11 @@ public class DBFunction{
     }
 
 
+    /**
+     * Query of looking up the user by email
+     * @param email
+     * @return the list of the user match the mail - should be 0 or 1 if I'm not dumb
+     */
     public ArrayList<User> lookUpByEmail(String email){
         ResultSet data; 
         ArrayList<User> returnData = new ArrayList<>();
@@ -261,6 +279,81 @@ public class DBFunction{
         }
 
         return returnData;
+    }
+
+    /**
+     * Follow a user
+     * @param user user who request a follow
+     * @param following user that got a follow
+     * @return if the execution is success, and there is no conflict
+     */
+    public boolean userFollowing(int user, int following){
+        ResultSet data = null;
+        PreparedStatement pdst = null;
+        PreparedStatement pdst2 = null;
+    
+    try {
+        String query = "SELECT * FROM following WHERE user_id=? AND following_id=?";
+        pdst = this.connection.prepareStatement(query);
+        pdst.setInt(1, user);
+        pdst.setInt(2, following);
+        data = pdst.executeQuery();
+
+        if (data.next()) {
+            return false;
+        }
+
+        String query2 = "INSERT INTO following (user_id, following_id) VALUES(?, ?)";
+        pdst2 = this.connection.prepareStatement(query2);
+        pdst2.setInt(1, user);
+        pdst2.setInt(2, following);
+
+        int rowsAffected = pdst2.executeUpdate();
+        return rowsAffected > 0;
+
+    } catch (Exception e) {
+            System.out.println(e);
+            return false;
+        }
+    }
+
+
+
+    /**
+     * UnFollow a user (ddel;ete the relation in the DB)
+     * @param user user who request an Unfollow
+     * @param following user that got an unfollow
+     * @return if the execution is success, and there is no conflict
+     */
+    public boolean userUnFollowing(int user, int following){
+        ResultSet data = null;
+        PreparedStatement pdst = null;
+        PreparedStatement pdst2 = null;
+    
+    try {
+        String query = "SELECT * FROM following WHERE user_id=? AND following_id=?";
+        pdst = this.connection.prepareStatement(query);
+        pdst.setInt(1, user);
+        pdst.setInt(2, following);
+        data = pdst.executeQuery();
+
+        if (!data.next()) {
+            return false;
+        }
+
+        String query2 = "DELETE FROM following WHERE user_id=? AND following_id=?";
+        pdst2 = this.connection.prepareStatement(query2);
+        pdst2.setInt(1, user);
+        pdst2.setInt(2, following);
+
+        int rowsAffected = pdst2.executeUpdate();
+        System.out.println(rowsAffected);
+        return rowsAffected > 0;
+
+    } catch (Exception e) {
+            System.out.println(e);
+            return false;
+        }
     }
 
     /**
@@ -291,15 +384,17 @@ public class DBFunction{
         // User testUser = test.login("MasterFaster", "RDA");
         // System.out.println(testUser);
 
-        ArrayList<User> a = test.lookUpByEmail("ahowood1e@dagondesign.co");
+        // ArrayList<User> a = test.lookUpByEmail("ahowood1e@dagondesign.co");
 
-        for(User user : a){
-            System.out.println(user.getId());
-            System.out.println(user.getUsername());
-            System.out.println(user.getPassword());
-        }
+        // for(User user : a){
+        //     System.out.println(user.getId());
+        //     System.out.println(user.getUsername());
+        //     System.out.println(user.getPassword());
+        // }
 
-
+        // System.out.println(test.userFollowing(1, 727));
+        System.out.println(test.userUnFollowing(1, 3));
+        System.out.println(test.userUnFollowing(1, 727));
 
         System.out.println(test.closeConnection());
     }
