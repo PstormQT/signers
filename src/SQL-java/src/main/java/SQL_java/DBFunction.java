@@ -182,7 +182,8 @@ public class DBFunction{
      * And also updates the listen count of the song
      * @param songID The ID of the song we are listening to 
      * @param user The user that is listening to the song
-     * @return
+     * @return The Number of rows changed
+     * @author Antonio Bicknell <acb9430>
      */
     public int listenToSong(int songID, User user){
         String query = "INSERT INTO listens_to (list_user_id, list_song_id, date_time_listened) VALUES (?,?,?)";
@@ -212,10 +213,34 @@ public class DBFunction{
 
     }
 
+    /**
+     * 
+     * @param colID the ID of the Collection we are listening to
+     * @param user The User listening to the collection
+     * @return Number of rows changed
+     * @author Antonio Bicknell <acb9430>
+     */
     public int listenToCollection(int colID, User user){
-        String query = "SELECT "
+        String insertQuery = "INSERT INTO listens_to (list_user_id,  list_song_id, date_time_listened) SELECT ?, song_id, ? FROM collection_song WHERE mc_id = ?";
+        String updatequery = "UPDATE song SET playcount = playcount + 1 WHERE song_id IN (SELECT song_id FROM collection_song WHERE mc_id = ?)";
+        try(PreparedStatement insertStatement = connection.prepareStatement(insertQuery);
+            PreparedStatement updateStatement = connection.prepareStatement(updatequery)   ){
+                insertStatement.setInt(1, user.getId());
+                insertStatement.setInt(2, colID);
 
-        return 0;
+                updateStatement.setInt(1, colID);
+
+                int rowsAffected = 0;
+                rowsAffected += insertStatement.executeUpdate();
+                rowsAffected += updateStatement.executeUpdate();
+                return rowsAffected;
+
+            }
+             catch (SQLException e) {
+                System.out.println(e);
+                return 0;
+            }
+
     }
 
 
