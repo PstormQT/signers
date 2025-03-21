@@ -1,5 +1,7 @@
 package SQL_java;
 
+import com.jcraft.jsch.*;
+
 import java.lang.Thread.State;
 import java.lang.reflect.Executable;
 import java.sql.Connection;
@@ -7,6 +9,8 @@ import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.Properties;
 import java.util.Collection;
 import java.sql.Date;
 import java.sql.PreparedStatement;
@@ -15,31 +19,129 @@ import java.sql.PreparedStatement;
  * This is our class to access and interact with the Database. 
  * Any method/function that directly accesses the Database will and should be in here
  *      with VERY FEW EXCEPTIONS
+ * NOTICE: DISCONNECT FROM DATAGRIP IN THE ORDER FOR THE CODE TO WORK
  */
 public class DBFunction{
 
     private Connection connection;
     private java.util.Date utilDate = new java.util.Date();
     private java.sql.Date currentDate;
+    private Session session = null;
+    public static final String DBNAME = "p32001_05";
 
+    /**
+     * Return the current connection to the database
+     * @return
+     */
     public Connection getConnection(){
         return connection;
     }
 
+    /**
+     * Contructor for the connection to the database
+     * Added SSH tunneling to the server
+     */
     public DBFunction() {
+        this.currentDate = new java.sql.Date(utilDate.getTime());
+        
+        int lport = 5432;
+        String rhost = "starbug.cs.rit.edu";
+        int rport = 5432;
+        String user = abc.USERNAME; //change to your username
+        String password = abc.PASSWORD; //change to your password
+        String databaseName = DBNAME; //change to your database name
+
+        String driverName = "org.postgresql.Driver";
+        
         try {
-            Class.forName("org.postgresql.Driver");
-            this.connection = DriverManager.getConnection(abc.DBLink, abc.USERNAME, abc.PASSWORD);
-            if (connection == null) {
-                throw new Exception("Error connecting to the database");
-            }
-            currentDate = new Date(utilDate.getTime());
+            java.util.Properties config = new java.util.Properties();
+            config.put("StrictHostKeyChecking", "no");
+            JSch jsch = new JSch();
+            session = jsch.getSession(user, rhost, 22);
+            session.setPassword(password);
+            session.setConfig(config);
+            session.setConfig("PreferredAuthentications","publickey,keyboard-interactive,password");
+            session.connect();
+            System.out.println("Connected");
+            int assigned_port = session.setPortForwardingL(lport, "127.0.0.1", rport);
+            System.out.println("Port Forwarded");
+
+            // Assigned port could be different from 5432 but rarely happens
+            String url = "jdbc:postgresql://127.0.0.1:"+ assigned_port + "/" + databaseName;
+
+            System.out.println("database Url: " + url);
+            Properties props = new Properties();
+            props.put("user", user);
+            props.put("password", password);
+
+            Class.forName(driverName);
+            this.connection = DriverManager.getConnection(url, props);
+
         } catch (Exception e) {
             System.err.println(e);
         }
     }
 
+    /*
+    public ResultSet selectExec(PreparedStatement pdst){
+        if(connection == null){
+            try {
+                Class.forName("org.postgresql.Driver");
+                this.connection = DriverManager.getConnection(abc.DBLink, abc.USERNAME, abc.PASSWORD);
+                if (connection == null) {
+                    throw new Exception("Error connecting to the database");
+                }
+                currentDate = new Date(utilDate.getTime());
+                return pdst.executeQuery();
+            } catch (Exception e) {
+                System.err.println(e);
+                return null;
+            }
+        }
+        else{
+            try{
+                return pdst.executeQuery();
+            }
+            catch (Exception e){
+                return null;
+            }
+        }
 
+    }
+        */
+
+        /* 
+    public int updateExec(PreparedStatement pdst){
+        if(connection == null){
+            try {
+                Class.forName("org.postgresql.Driver");
+                this.connection = DriverManager.getConnection(abc.DBLink, abc.USERNAME, abc.PASSWORD);
+                if (connection == null) {
+                    throw new Exception("Error connecting to the database");
+                }
+                currentDate = new Date(utilDate.getTime());
+                return pdst.executeUpdate();
+            } catch (Exception e) {
+                System.err.println(e);
+                return 0;
+            }
+        }
+        else{
+            try{
+                return pdst.executeUpdate();
+            }
+            catch (Exception e){
+                return 0;
+            }
+        }
+    }
+        */
+
+
+    /**
+     * Testing the connection to the server
+     * @param table_name
+     */
     public void testAccessData(String table_name){
         Statement statement;
         ResultSet results;
@@ -67,22 +169,22 @@ public class DBFunction{
      * @author Brandon Yi
      */
     public User login(String username, String password){
-        ResultSet results;
-        try{
+        ResultSet results = null;
         String query = "SELECT user_id,username,password FROM users WHERE username=? AND password=?";
-        PreparedStatement pdst = connection.prepareStatement(query);
+        try( PreparedStatement pdst = connection.prepareStatement(query);){
         pdst.setString(1, username);
         pdst.setString(2, password);
         results = pdst.executeQuery();
         if (results.next()){
             query = "UPDATE users SET last_login_date = ? WHERE username = ? AND password = ?";
-            PreparedStatement pdstII = connection.prepareStatement(query);
-            pdstII.setDate(1, currentDate);
-            pdstII.setString(2, username);
-            pdstII.setString(3, password);
-            pdstII.executeUpdate();
-            return new User(results.getInt("user_id"), results.getString("username"),
-                                   results.getString("password"));
+            try(PreparedStatement pdstII = connection.prepareStatement(query);){
+                pdstII.setDate(1, currentDate);
+                pdstII.setString(2, username);
+                pdstII.setString(3, password);
+                pdstII.executeUpdate();    
+                return new User(results.getInt("user_id"), results.getString("username"),
+                                    results.getString("password"));
+            }
         }
         else{
             return null;
@@ -139,10 +241,9 @@ public class DBFunction{
      * @return A user if successfully created, null if otherwise
      */
     public User createUser(String username, String password, String fname, String lname, String email){
-        ResultSet results;
-        try{
-            String query = "INSERT INTO users (password,creation_date,last_login_date,email,username,fname,lname) VALUES (?,?,?,?,?,?,?)";
-            PreparedStatement pdst = connection.prepareStatement(query);
+        ResultSet results = null;
+        String query = "INSERT INTO users (password,creation_date,last_login_date,email,username,fname,lname) VALUES (?,?,?,?,?,?,?)";
+        try(PreparedStatement pdst = connection.prepareStatement(query);){
             pdst.setString(1, password);
             pdst.setDate(2, currentDate);
             pdst.setDate(3, currentDate);
@@ -153,9 +254,8 @@ public class DBFunction{
             int rowsAffected = pdst.executeUpdate();
             System.out.println(rowsAffected);
             if(rowsAffected == 1){
-                try{
-                    String query2 = "SELECT user_id,username,password FROM users WHERE username = ? AND password = ?";
-                    PreparedStatement pdstII = connection.prepareStatement(query2);
+                String query2 = "SELECT user_id,username,password FROM users WHERE username = ? AND password = ?";
+                try(PreparedStatement pdstII = connection.prepareStatement(query2);){
                     pdstII.setString(1, username);
                     pdstII.setString(2, password);
                     results = pdstII.executeQuery();
@@ -180,15 +280,122 @@ public class DBFunction{
     }
 
 
+    /**
+     * Query of looking up the user by email
+     * @param email
+     * @return the list of the user match the mail - should be 0 or 1 if I'm not dumb
+     */
+    public ArrayList<User> lookUpByEmail(String email){
+        ResultSet data; 
+        ArrayList<User> returnData = new ArrayList<>();
+        try {
+            String query ="SELECT * FROM users WHERE email=?";
+            PreparedStatement pdst = connection.prepareStatement(query);
+            pdst.setString(1, email);
+            data = pdst.executeQuery();
+            while (data.next()){
+                User user = new User(data.getInt("user_id"), data.getString("username"),
+                data.getString("password"));
+                returnData.add(user);
+            }
+        } catch (Exception e) {
+            System.out.println(e);
+            return null;
+        }
+
+        return returnData;
+    }
+
+    /**
+     * Follow a user
+     * @param user user who request a follow
+     * @param following user that got a follow
+     * @return if the execution is success, and there is no conflict
+     */
+    public boolean userFollowing(int user, int following){
+        ResultSet data = null;
+        PreparedStatement pdst = null;
+        PreparedStatement pdst2 = null;
+    
+    try {
+        String query = "SELECT * FROM following WHERE user_id=? AND following_id=?";
+        pdst = this.connection.prepareStatement(query);
+        pdst.setInt(1, user);
+        pdst.setInt(2, following);
+        data = pdst.executeQuery();
+
+        if (data.next()) {
+            return false;
+        }
+
+        String query2 = "INSERT INTO following (user_id, following_id) VALUES(?, ?)";
+        pdst2 = this.connection.prepareStatement(query2);
+        pdst2.setInt(1, user);
+        pdst2.setInt(2, following);
+
+        int rowsAffected = pdst2.executeUpdate();
+        return rowsAffected > 0;
+
+    } catch (Exception e) {
+            System.out.println(e);
+            return false;
+        }
+    }
+
+
+
+    /**
+     * UnFollow a user (ddel;ete the relation in the DB)
+     * @param user user who request an Unfollow
+     * @param following user that got an unfollow
+     * @return if the execution is success, and there is no conflict
+     */
+    public boolean userUnFollowing(int user, int following){
+        ResultSet data = null;
+        PreparedStatement pdst = null;
+        PreparedStatement pdst2 = null;
+    
+    try {
+        String query = "SELECT * FROM following WHERE user_id=? AND following_id=?";
+        pdst = this.connection.prepareStatement(query);
+        pdst.setInt(1, user);
+        pdst.setInt(2, following);
+        data = pdst.executeQuery();
+
+        if (!data.next()) {
+            return false;
+        }
+
+        String query2 = "DELETE FROM following WHERE user_id=? AND following_id=?";
+        pdst2 = this.connection.prepareStatement(query2);
+        pdst2.setInt(1, user);
+        pdst2.setInt(2, following);
+
+        int rowsAffected = pdst2.executeUpdate();
+        System.out.println(rowsAffected);
+        return rowsAffected > 0;
+
+    } catch (Exception e) {
+            System.out.println(e);
+            return false;
+        }
+    }
 
     /**
      * Closes the connection with the DB server. 
-     * MAKE SURE TO ALWAYS CALL THIS AT END OF MAIN
+     * MAKE SURE TO ALWAYS CALL THIS AT END OF TRANSACTION
      * @return true if close was successful, false if otherwise
      */
     public boolean closeConnection(){
         try{
-            connection.close();
+            if (this.connection != null && !this.connection.isClosed()) {
+                System.out.println("Closing Database Connection");
+                this.connection.close();
+            }
+            if (session != null && session.isConnected()) {
+                System.out.println("Closing SSH Connection");
+                session.disconnect();
+            }
             return true;
         }
         catch (Exception e){
@@ -205,6 +412,5 @@ public class DBFunction{
         // System.out.println(testUser);
         System.out.println(test.closeConnection());
     }
-
 
 }
