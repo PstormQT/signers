@@ -199,8 +199,10 @@ public class DBFunction{
 
     public static void main(String[] args) {
         DBFunction test = new DBFunction();
-        User testUser = test.login("MasterFaster", "RDA");
-        System.out.println(testUser);
+        // User testUser = test.login("MasterFaster", "RDA");
+
+        System.out.println(test.createCollection("Peter Dang", 1800, 30, 1));
+        // System.out.println(testUser);
         System.out.println(test.closeConnection());
     }
 
