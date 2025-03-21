@@ -219,6 +219,70 @@ public class DBFunction{
         return returnData;
     }
 
+    public boolean userFollowing(int user, int following){
+        ResultSet data = null;
+        PreparedStatement pdst = null;
+        PreparedStatement pdst2 = null;
+    
+    try {
+        String query = "SELECT * FROM following WHERE user_id=? AND following_id=?";
+        pdst = this.connection.prepareStatement(query);
+        pdst.setInt(1, user);
+        pdst.setInt(2, following);
+        data = pdst.executeQuery();
+
+        if (data.next()) {
+            return false;
+        }
+
+        String query2 = "INSERT INTO following (user_id, following_id) VALUES(?, ?)";
+        pdst2 = this.connection.prepareStatement(query2);
+        pdst2.setInt(1, user);
+        pdst2.setInt(2, following);
+
+        int rowsAffected = pdst2.executeUpdate();
+        return rowsAffected > 0;
+
+    } catch (Exception e) {
+            System.out.println(e);
+            return false;
+        }
+    }
+
+
+
+
+    public boolean userUnFollowing(int user, int following){
+        ResultSet data = null;
+        PreparedStatement pdst = null;
+        PreparedStatement pdst2 = null;
+    
+    try {
+        String query = "SELECT * FROM following WHERE user_id=? AND following_id=?";
+        pdst = this.connection.prepareStatement(query);
+        pdst.setInt(1, user);
+        pdst.setInt(2, following);
+        data = pdst.executeQuery();
+
+        if (!data.next()) {
+            return false;
+        }
+
+        String query2 = "DELETE FROM following WHERE user_id=? AND following_id=?";
+        pdst2 = this.connection.prepareStatement(query2);
+        pdst2.setInt(1, user);
+        pdst2.setInt(2, following);
+
+        int rowsAffected = pdst2.executeUpdate();
+        System.out.println(rowsAffected);
+        return rowsAffected > 0;
+
+    } catch (Exception e) {
+            System.out.println(e);
+            return false;
+        }
+    }
+
     /**
      * Closes the connection with the DB server. 
      * MAKE SURE TO ALWAYS CALL THIS AT END OF MAIN
@@ -247,15 +311,17 @@ public class DBFunction{
         // User testUser = test.login("MasterFaster", "RDA");
         // System.out.println(testUser);
 
-        ArrayList<User> a = test.lookUpByEmail("ahowood1e@dagondesign.co");
+        // ArrayList<User> a = test.lookUpByEmail("ahowood1e@dagondesign.co");
 
-        for(User user : a){
-            System.out.println(user.getId());
-            System.out.println(user.getUsername());
-            System.out.println(user.getPassword());
-        }
+        // for(User user : a){
+        //     System.out.println(user.getId());
+        //     System.out.println(user.getUsername());
+        //     System.out.println(user.getPassword());
+        // }
 
-
+        // System.out.println(test.userFollowing(1, 727));
+        System.out.println(test.userUnFollowing(1, 3));
+        System.out.println(test.userUnFollowing(1, 727));
 
         System.out.println(test.closeConnection());
     }
