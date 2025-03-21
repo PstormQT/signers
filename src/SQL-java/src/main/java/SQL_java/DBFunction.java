@@ -10,6 +10,9 @@ import java.sql.Statement;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.ArrayList;
+
+import org.apache.commons.lang3.ObjectUtils.Null;
+
 import java.sql.Date;
 import java.sql.PreparedStatement;
 
@@ -168,7 +171,11 @@ public class DBFunction{
     }
 
 
-    public ArrayList<Song> searchSongs(String containedText){
+    public ArrayList<Song> searchSongs(String containedText, String order){
+        if (order == null){
+            //odrer by title, then artist name (first artist name alphabetically)
+            order = "TITLE, (SELECT )";
+        }
         String query = "SELECT ";
 
 
