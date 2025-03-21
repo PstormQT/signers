@@ -7,7 +7,7 @@ This file is included in .gitignore under 'abc.java', so don't accidentally publ
 */
 
 
-public record abc() {
+public record CREDENTIALS() {
     public static final String DBLink = "jdbc:postgresql://127.0.0.1:5432/p32001_05";
     public static final String USERNAME = "X";
     public static final String PASSWORD = "Y";
