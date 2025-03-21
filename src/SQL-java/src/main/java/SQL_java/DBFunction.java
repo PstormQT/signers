@@ -9,6 +9,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Timestamp;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.sql.Date;
 import java.sql.PreparedStatement;
 
@@ -168,8 +169,10 @@ public class DBFunction{
 
 
     public ArrayList<Song> searchSongs(String containedText){
-        String query = "SELECT "
+        String query = "SELECT ";
 
+
+        return null;
 
     }
     
@@ -182,15 +185,16 @@ public class DBFunction{
      * @return
      */
     public int listenToSong(int songID, User user){
-        try{
         String query = "INSERT INTO listens_to (list_user_id, list_song_id, date_time_listened) VALUES (?,?,?)";
-
-        PreparedStatement insertST = connection.prepareStatement(query);
+        String updateQuery = "UPDATE song SET playcount = playcount + 1 WHERE song_id = ?";
+        try(PreparedStatement insertST = connection.prepareStatement(query);
+        PreparedStatement updateST = connection.prepareStatement(updateQuery)  ){
+        
         insertST.setInt(1, user.getId());
         insertST.setInt(2, songID);
         insertST.setTimestamp(3, Timestamp.from(Instant.now()) );
-        String updateQuery = "UPDATE song SET playcount = playcount + 1 WHERE song_id = ?";
-        PreparedStatement updateST = connection.prepareStatement(updateQuery);
+        
+        
         updateST.setInt(1, songID);
         int rowsAffected = 0;
         rowsAffected += insertST.executeUpdate();
@@ -206,6 +210,12 @@ public class DBFunction{
             }
         
 
+    }
+
+    public int listenToCollection(int colID, User user){
+        String query = "SELECT "
+
+        return 0;
     }
 
 
