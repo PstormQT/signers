@@ -144,8 +144,87 @@ public class DBFunction{
             System.out.println(e);
             return null;
         }
+
     }
 
+    /**
+     * Searches music collections by name and prints out list
+     * @param name
+     * @author Andrew Rosenhaus
+     */
+    public void collectionSearch(String name){
+        ResultSet results;
+        try{
+            String query = "SELECT name, number_of_songs, total_time FROM music_collection WHERE LOWER(name) LIKE ? ORDER BY name DESC"
+            PreparedStatement pdst = connection.preparedStatement(query);
+            pdst.setString(1, name);
+            results = pdst.executeQuery();
+            ResultSetMetaData resultsMetaData = results.getMetaData();
+            int numColumns = resultsMetaData.getColumnCount();
+            int numRows = resultsMetaData.get
+            while (results.next())
+                while (int j = 1; j <= numColumns; j++){
+                    System.out.println(results.getString(j));
+                }
+                results.next();
+            }
+        }
+        catch(SQLException e){
+            System.out.println(e);
+        }
+        finally{
+            if (results != null) {
+                results.close();
+            }
+        }
+    }
+
+    /**
+     * Updates name of collection
+     * @param name
+     * @param updatedName
+     * @author Andrew Rosenhaus
+     */
+    public void modifyCollectionName(String name, String updatedName) {
+        ResultSet results;
+        try {
+            String query = "UPDATE music_collection FROM name = ? WHERE LOWER(name) LIKE ?"
+            PreparedStatement pdst = connection.preparedStatement(query);
+            pdst.setString(1, name);
+            results = pdst.executeQuery();
+        }
+        catch (SQLException e) {
+            System.out.println(e);
+        }
+        finally {
+            if (results != null) {
+                results.close();
+            }
+        }
+    }
+
+    /**
+     * Deletes collection
+     * @param mc_id
+     * @author Andrew Rosenhaus
+     */
+
+    public void deleteCollection(Integer mc_id) {
+        try {
+            String query = "DELETE FROM music_collection WHERE mc_id = ?"
+            PreparedStatement pdst = connection.preparedStatement(query);
+            pdst.setInt(1, mc_id);
+            results = pdst.executeQuery();
+        }
+        catch (SQLException e) {
+            System.out.println(e);
+        }
+        finally {
+            if (results != null) {
+                results.close();
+            }
+        }
+    }
 
 
     /**
