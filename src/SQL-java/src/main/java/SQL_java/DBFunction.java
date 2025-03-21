@@ -157,12 +157,12 @@ public class DBFunction{
     public List<> collectionSearch(String name, User user){
         ResultSet results;
         try{
-            String query = "SELECT name, number_of_songs, total_time FROM music_collection WHERE LOWER(name) LIKE ? AND user_id = ? ORDER BY name ASC"
+            String query = "SELECT name, number_of_songs, total_time FROM music_collection WHERE LOWER(name) LIKE ? AND user_id = ? ORDER BY name ASC";
             PreparedStatement pdst = connection.preparedStatement(query);
             pdst.setString(1, name);
-            pdst.setInt(2, user.getId())
+            pdst.setInt(2, user.getId());
             results = pdst.executeQuery();
-            ArrayList<MusicCollection> returnList = new ArrayList<>;
+            ArrayList<MusicCollection> returnList = new ArrayList<>();
             ResultSetMetaData resultsMetaData = results.getMetaData();
             int numColumns = resultsMetaData.getColumnCount();
             while (results.next())
@@ -194,7 +194,7 @@ public class DBFunction{
     public void modifyCollectionName(String name, String updatedName) {
         ResultSet results;
         try {
-            String query = "UPDATE music_collection FROM name = ? WHERE LOWER(name) LIKE ?"
+            String query = "UPDATE music_collection FROM name = ? WHERE LOWER(name) LIKE ?";
             PreparedStatement pdst = connection.preparedStatement(query);
             pdst.setString(1, name);
             results = pdst.executeQuery();
@@ -217,7 +217,7 @@ public class DBFunction{
 
     public void deleteCollection(Integer mc_id) {
         try {
-            String query = "DELETE FROM music_collection WHERE mc_id = ?"
+            String query = "DELETE FROM music_collection WHERE mc_id = ?";
             PreparedStatement pdst = connection.preparedStatement(query);
             pdst.setInt(1, mc_id);
             results = pdst.executeQuery();
