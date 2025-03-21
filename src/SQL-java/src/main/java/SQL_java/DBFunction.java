@@ -226,7 +226,8 @@ public class DBFunction{
         try(PreparedStatement insertStatement = connection.prepareStatement(insertQuery);
             PreparedStatement updateStatement = connection.prepareStatement(updatequery)   ){
                 insertStatement.setInt(1, user.getId());
-                insertStatement.setInt(2, colID);
+                insertStatement.setTimestamp(2, Timestamp.from(Instant.now()) );
+                insertStatement.setInt(3, colID);
 
                 updateStatement.setInt(1, colID);
 
