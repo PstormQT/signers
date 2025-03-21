@@ -1,5 +1,7 @@
 package SQL_java;
 
+import com.jcraft.jsch.*;
+
 import java.lang.Thread.State;
 import java.lang.reflect.Executable;
 import java.sql.Connection;
@@ -10,6 +12,8 @@ import java.sql.Statement;
 import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.util.ArrayList;
+import java.util.Properties;
+
 
 /**
  * This is our class to access and interact with the Database. 
@@ -21,24 +25,52 @@ public class DBFunction{
     private Connection connection;
     private java.util.Date utilDate = new java.util.Date();
     private java.sql.Date currentDate;
+    public static final String DBNAME = "p32001_05";
+
+    public DBFunction() {
+        this.currentDate = new java.sql.Date(utilDate.getTime());
+        
+        int lport = 5432;
+        String rhost = "starbug.cs.rit.edu";
+        int rport = 5432;
+        String user = abc.USERNAME; //change to your username
+        String password = abc.PASSWORD; //change to your password
+        String databaseName = DBNAME; //change to your database name
+
+        String driverName = "org.postgresql.Driver";
+        
+        try {
+            java.util.Properties config = new java.util.Properties();
+            config.put("StrictHostKeyChecking", "no");
+            JSch jsch = new JSch();
+            Session session = jsch.getSession(user, rhost, 22);
+            session.setPassword(password);
+            session.setConfig(config);
+            session.setConfig("PreferredAuthentications","publickey,keyboard-interactive,password");
+            session.connect();
+            System.out.println("Connected");
+            int assigned_port = session.setPortForwardingL(lport, "127.0.0.1", rport);
+            System.out.println("Port Forwarded");
+
+            // Assigned port could be different from 5432 but rarely happens
+            String url = "jdbc:postgresql://127.0.0.1:"+ assigned_port + "/" + databaseName;
+
+            System.out.println("database Url: " + url);
+            Properties props = new Properties();
+            props.put("user", user);
+            props.put("password", password);
+
+            Class.forName(driverName);
+            this.connection = DriverManager.getConnection(url, props);
+
+        } catch (Exception e) {
+            System.err.println(e);
+        }
+    }        
 
     public Connection getConnection(){
         return connection;
     }
-
-    public DBFunction() {
-        try {
-            Class.forName("org.postgresql.Driver");
-            this.connection = DriverManager.getConnection(abc.DBLink, abc.USERNAME, abc.PASSWORD);
-            if (connection == null) {
-                throw new Exception("Error connecting to the database");
-            }
-            currentDate = new Date(utilDate.getTime());
-        } catch (Exception e) {
-            System.err.println(e);
-        }
-    }
-
 
     public void testAccessData(String table_name){
         Statement statement;
@@ -67,20 +99,19 @@ public class DBFunction{
      * @author Brandon Yi
      */
     public User login(String username, String password){
+        Statement statement;
         ResultSet results;
         try{
-        String query = "SELECT user_id,username,password FROM users WHERE username=? AND password=?";
-        PreparedStatement pdst = connection.prepareStatement(query);
-        pdst.setString(1, username);
-        pdst.setString(2, password);
-        results = pdst.executeQuery();
+        String query = "SELECT * FROM users WHERE username='"+username+"' AND password='"+password+"'";
+        statement = this.connection.createStatement();
+        results = statement.executeQuery(query);
         if (results.next()){
             query = "UPDATE users SET last_login_date = ? WHERE username = ? AND password = ?";
-            PreparedStatement pdstII = connection.prepareStatement(query);
-            pdstII.setDate(1, currentDate);
-            pdstII.setString(2, username);
-            pdstII.setString(3, password);
-            pdstII.executeUpdate();
+            PreparedStatement pdst = connection.prepareStatement(query);
+            pdst.setDate(1, currentDate);
+            pdst.setString(2, username);
+            pdst.setString(3, password);
+            pdst.executeUpdate();
             return new User(results.getInt("user_id"), results.getString("username"),
                                    results.getString("password"));
         }
@@ -94,6 +125,7 @@ public class DBFunction{
         }
        
     }
+
 
 
     /**
@@ -156,14 +188,17 @@ public class DBFunction{
      * @author Andrew Rosenhaus
      */
     public ArrayList<MusicCollection> collectionSearch(String name, User user){
-        ResultSet results;
-        try{
-            String query = "SELECT name, number_of_songs, total_time FROM music_collection WHERE LOWER(name) LIKE ? AND user_id = ? ORDER BY name ASC";
-            PreparedStatement pdst = connection.prepareStatement(query);
+        ResultSet results = null;
+        String query = "SELECT name, number_of_songs, total_time FROM music_collection WHERE LOWER(name) LIKE ? AND user_id = ? ORDER BY name ASC";
+        try(PreparedStatement pdst = connection.prepareStatement(query)) {
             pdst.setString(1, name);
             pdst.setInt(2, user.getId());
             results = pdst.executeQuery();
             ArrayList<MusicCollection> returnList = new ArrayList<>();
+            if(!results.next()){
+                System.out.println( "No results found for query.");
+                return null;
+            }
             while (results.next())
                 for (int j = 1; j <= 3; j++){
                     System.out.print(results.getString(j) + ", ");
@@ -177,6 +212,17 @@ public class DBFunction{
             System.out.println(e);
             return null;
         }
+        finally {
+                try{
+                    if (results != null){
+                        results.close();
+                    }
+                }
+                catch (SQLException c){
+                    System.out.println(c);
+                    return null;
+                }
+            }
     }
 
     /**
@@ -187,17 +233,28 @@ public class DBFunction{
      * @author Andrew Rosenhaus
      */
     public boolean modifyCollectionName(String name, String updatedName) {
-        try {
-            String query = "UPDATE music_collection FROM name = ? WHERE LOWER(name) LIKE ?";
-            PreparedStatement pdst = connection.prepareStatement(query);
+        ResultSet results = null;
+        String query = "UPDATE music_collection FROM name = ? WHERE LOWER(name) LIKE ?";
+        try(PreparedStatement pdst = connection.prepareStatement(query)) {
             pdst.setString(1, name);
-            pdst.executeQuery();
+            results = pdst.executeQuery();
             return true;
         }
         catch (SQLException e) {
             System.out.println(e);
             return false;
         }
+        finally {
+                try{
+                    if (results != null){
+                        results.close();
+                    }
+                }
+                catch (SQLException c){
+                    System.out.println(c);
+                    return false;
+                }
+            }
     }
 
     /**
@@ -208,6 +265,8 @@ public class DBFunction{
      */
 
     public boolean deleteCollection(Integer mc_id) {
+        ResultSet results = null;
+
         try {
             String query = "DELETE FROM music_collection WHERE mc_id = ?";
             PreparedStatement pdst = connection.prepareStatement(query);
@@ -219,6 +278,17 @@ public class DBFunction{
             System.out.println(e);
             return false;
         }
+        finally {
+                try{
+                    if (results != null){
+                        results.close();
+                    }
+                }
+                catch (SQLException c){
+                    System.out.println(c);
+                    return false;
+                }
+            }
     }
 
 
