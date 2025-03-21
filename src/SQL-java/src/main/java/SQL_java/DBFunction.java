@@ -9,6 +9,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Date;
 import java.sql.PreparedStatement;
+import java.util.ArrayList;
 
 /**
  * This is our class to access and interact with the Database. 
@@ -154,32 +155,27 @@ public class DBFunction{
      * @return List of all collection with that name from that user
      * @author Andrew Rosenhaus
      */
-    public List<> collectionSearch(String name, User user){
+    public ArrayList<MusicCollection> collectionSearch(String name, User user){
         ResultSet results;
         try{
             String query = "SELECT name, number_of_songs, total_time FROM music_collection WHERE LOWER(name) LIKE ? AND user_id = ? ORDER BY name ASC";
-            PreparedStatement pdst = connection.preparedStatement(query);
+            PreparedStatement pdst = connection.prepareStatement(query);
             pdst.setString(1, name);
             pdst.setInt(2, user.getId());
             results = pdst.executeQuery();
             ArrayList<MusicCollection> returnList = new ArrayList<>();
             while (results.next())
-                while (int j = 1; j <= 3; j++){
+                for (int j = 1; j <= 3; j++){
                     System.out.print(results.getString(j) + ", ");
                 }
-                returnList.add(new MusicCollection(results.getString(1), results.getString(3), results.getString(2)));
+                returnList.add(new MusicCollection(results.getString(1), results.getInt(3), results.getInt(2)));
                 System.out.println("");
                 results.next();
-            }
-            return returnList;
+                return returnList;
         }
-        catch(SQLException e){
+        catch (SQLException e){
             System.out.println(e);
-        }
-        finally{
-            if (results != null) {
-                results.close();
-            }
+            return null;
         }
     }
 
@@ -187,46 +183,41 @@ public class DBFunction{
      * Updates name of collection
      * @param name
      * @param updatedName
+     * @returns true if successful, false if error
      * @author Andrew Rosenhaus
      */
-    public void modifyCollectionName(String name, String updatedName) {
-        ResultSet results;
+    public boolean modifyCollectionName(String name, String updatedName) {
         try {
             String query = "UPDATE music_collection FROM name = ? WHERE LOWER(name) LIKE ?";
-            PreparedStatement pdst = connection.preparedStatement(query);
+            PreparedStatement pdst = connection.prepareStatement(query);
             pdst.setString(1, name);
-            results = pdst.executeQuery();
+            pdst.executeQuery();
+            return true;
         }
         catch (SQLException e) {
             System.out.println(e);
-        }
-        finally {
-            if (results != null) {
-                results.close();
-            }
+            return false;
         }
     }
 
     /**
      * Deletes collection
      * @param mc_id
+     * @return true if successful, false if error
      * @author Andrew Rosenhaus
      */
 
-    public void deleteCollection(Integer mc_id) {
+    public boolean deleteCollection(Integer mc_id) {
         try {
             String query = "DELETE FROM music_collection WHERE mc_id = ?";
-            PreparedStatement pdst = connection.preparedStatement(query);
+            PreparedStatement pdst = connection.prepareStatement(query);
             pdst.setInt(1, mc_id);
-            results = pdst.executeQuery();
+            pdst.executeQuery();
+            return true;
         }
         catch (SQLException e) {
             System.out.println(e);
-        }
-        finally {
-            if (results != null) {
-                results.close();
-            }
+            return false;
         }
     }
 
@@ -251,8 +242,7 @@ public class DBFunction{
         DBFunction test = new DBFunction();
         User testUser = test.login("MasterFaster", "RDA");
         System.out.println(testUser);
+        test.collectionSearch("Synergistic object-orien", testUser);
         System.out.println(test.closeConnection());
     }
-
-
 }
