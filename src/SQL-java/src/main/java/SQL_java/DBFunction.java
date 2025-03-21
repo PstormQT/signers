@@ -18,6 +18,7 @@ import java.sql.PreparedStatement;
  * This is our class to access and interact with the Database. 
  * Any method/function that directly accesses the Database will and should be in here
  *      with VERY FEW EXCEPTIONS
+ * NOTICE: DISCONNECT FROM DATAGRIP IN THE ORDER FOR THE CODE TO WORK
  */
 public class DBFunction{
 
@@ -219,6 +220,12 @@ public class DBFunction{
         return returnData;
     }
 
+    /**
+     * Follow a user
+     * @param user user who request a follow
+     * @param following user that got a follow
+     * @return if the execution is success, and there is no conflict
+     */
     public boolean userFollowing(int user, int following){
         ResultSet data = null;
         PreparedStatement pdst = null;
@@ -251,7 +258,12 @@ public class DBFunction{
 
 
 
-
+    /**
+     * UnFollow a user (ddel;ete the relation in the DB)
+     * @param user user who request an Unfollow
+     * @param following user that got an unfollow
+     * @return if the execution is success, and there is no conflict
+     */
     public boolean userUnFollowing(int user, int following){
         ResultSet data = null;
         PreparedStatement pdst = null;
