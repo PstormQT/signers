@@ -215,31 +215,34 @@ public class DBFunction{
      */
     public ArrayList<Song> searchSongs(String containedText){
 /**THE QUERY FOR THIS FUNCTION IS AS FOLLOWS:
-         * SELECT s.song_id, s.title, s.length, s.playcount,  string_agg(a.name, ', ' ORDER BY a.name) AS artist_names,
-                            string_agg(g.genre_name, ', 'ORDER BY g.genre_name) AS genre_names,
-                            string_agg(alb.name, ', ' ORDER BY alb.name) as album_names
-            FROM song s INNER JOIN artist a
-                ON EXISTS(SELECT * FROM created WHERE c_artist_id = a.artist_id AND c_songid = s.song_id)
-            INNER JOIN genre g
-                ON EXISTS(SELECT * FROM song_genre WHERE song_genre.song_id = s.song_id AND song_genre.genre_id = g.genre_id)
-            INNER JOIN album alb
-                ON EXISTS(SELECT * FROM album_song WHERE album_song.col_album_id = alb.album_id AND album_song.col_song_id = s.song_id)
-            WHERE
-                s.title LIKE "%SEARCHTERM%"
-                OR artist_names LIKE "%SEARCHTERM%"
-                OR genre_names LIKE "%SEARCHTERM%"
-                OR album_names LIKE "%SEARCHTERM%"
-            GROUP BY s.song_id, s.title
-            ORDER BY s.title, artist_names
+        SELECT s.song_id, s.title, s.length, s.playcount, string_agg(a.name, ', ' ORDER BY a.name) AS artist_names,
+                                            string_agg(g.genre_name, ', 'ORDER BY g.genre_name) AS genre_names,
+                                            string_agg(alb.name, ', ' ORDER BY alb.name) AS album_names
+        FROM song s INNER JOIN artist a
+            ON EXISTS(SELECT * FROM created WHERE c_artist_id = a.artist_id AND c_songid = s.song_id)
+        INNER JOIN genre g
+            ON EXISTS(SELECT * FROM song_genre WHERE song_genre.song_id = s.song_id AND song_genre.genre_id = g.genre_id)
+        INNER JOIN album alb
+            ON EXISTS(SELECT * FROM album_song WHERE album_song.col_album_id = alb.album_id     AND album_song.col_song_id = s.song_id)
+        WHERE TRUE
+        GROUP BY s.song_id, s.title
+        HAVING
+            s.title LIKE '%bob%'
+            OR string_agg(a.name, ', ') LIKE'%bob%'
+            OR string_agg(g.genre_name, ', ') LIKE '%bob%'
+            OR string_agg(alb.name, ', ') LIKE '%bob%'
+        ORDER BY s.title, artist_names
+
          */
 
-        String query = "SELECT s.song_id, s.title, s.length, s.playcount, string_agg(a.name, ', ' ORDER BY a.name) AS artist_names, string_agg(g.genre_name, ', 'ORDER BY g.genre_name) as genre_names " + 
-        "string_agg(alb.name, ', 'ORDER BY alb.name) AS album_names " +
+        String query = "SELECT s.song_id, s.title, s.length, s.playcount, STRING_AGG(a.name, ', ' ORDER BY a.name) AS artist_names, STRING_AGG(g.genre_name, ', ' ORDER BY g.genre_name) as genre_names, " + 
+        "STRING_AGG(alb.name, ', ' ORDER BY alb.name) AS album_names " +
         "FROM song s INNER JOIN artist a ON EXISTS(SELECT * FROM created WHERE c_artist_id = a.artist_id AND c_songid = s.song_id) " + 
         "INNER JOIN genre g ON EXISTS(SELECT * FROM song_genre WHERE song_genre.song_id = s.song_id AND song_genre.genre_id = g.genre_id) " + 
         "INNER JOIN album alb ON EXISTS(SELECT * FROM album_song WHERE album_song.col_album_id = alb.album_id AND album_song.col_song_id = s.song_id) " +
-        "WHERE s.title LIKE ? OR artist_names LIKE ? OR genre_names LIKE ? OR album_names LIKE ?" +
-        "GROUP BY s.song_id, s.title ORDER BY s.title, artist_names" ;
+        "WHERE TRUE GROUP BY s.song_id, s.title HAVING s.title LIKE ? OR STRING_AGG(a.name, ', ') LIKE ? " + 
+        "OR STRING_AGG(g.genre_name, ', ') LIKE ? OR STRING_AGG(alb.name, ', ') LIKE ?" +
+        "ORDER BY s.title, artist_names" ;
         try(PreparedStatement preparedST = connection.prepareStatement(query)) {
             preparedST.setString(1, "%" + containedText + "%");
             preparedST.setString(2, "%" + containedText + "%");
@@ -249,11 +252,11 @@ public class DBFunction{
             ResultSet results = preparedST.executeQuery();
             ArrayList<Song> songs = new ArrayList<Song>();
             while(results.next()){
-                songs.add(new Song( results.getInt("s.song_id"), 
-                                    results.getString("s.title"),
+                songs.add(new Song( results.getInt("song_id"), 
+                                    results.getString("title"),
                                     results.getString("artist_names"),
-                                    results.getInt("s.length"),
-                                    results.getInt("s.playcount"),  
+                                    results.getInt("length"),
+                                    results.getInt("playcount"),  
                                     results.getString("album_names") ) );
             }
             //Now that all added, good to return
@@ -346,10 +349,19 @@ public class DBFunction{
         DBFunction test = new DBFunction();
         User testUser = test.login("MasterFaster", "RDA");
         System.out.println(testUser);
-        System.out.println("testing listening:" );
-        System.out.println(test.listenToSong(42, testUser));
-        System.out.println("Testing Collection Listening: Expecting 2");
-        System.out.println(test.listenToCollection(7093, testUser));
+        
+        
+        // The following lines fail because date_time_listened is not part of the key of Listens_to
+        //System.out.println("testing listening:" );
+        //System.out.println(test.listenToSong(42, testUser));
+        //System.out.println("Testing Collection Listening: Expecting 2");
+        //System.out.println(test.listenToCollection(7093, testUser));
+
+        System.out.println("Testing Listening");
+        ArrayList<Song> songs = test.searchSongs("bob");
+        for(Song s : songs){
+            System.out.println(s);
+        }
 
 
 
