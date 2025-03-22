@@ -166,13 +166,15 @@ public class DBFunction{
     }
 
 
+
     /**
      * 
-     * @param containedText
-     * @return
+     * @param containedText The text we are searching to be in the title, artists, albums, or genres
+     * @return An arraylist of all songs with containedText as part of it's title, artist, albums, or genres
+     * @author Antonio Bicknell <acb930>
      */
     public ArrayList<Song> searchSongs(String containedText){
-                /**QUERY is as follows
+/**THE QUERY FOR THIS FUNCTION IS AS FOLLOWS:
          * SELECT s.song_id, s.title, s.length, s.playcount,  string_agg(a.name, ', ' ORDER BY a.name) AS artist_names,
                             string_agg(g.genre_name, ', 'ORDER BY g.genre_name) AS genre_names,
                             string_agg(alb.name, ', ' ORDER BY alb.name) as album_names
@@ -186,6 +188,7 @@ public class DBFunction{
                 s.title LIKE "%SEARCHTERM%"
                 OR artist_names LIKE "%SEARCHTERM%"
                 OR genre_names LIKE "%SEARCHTERM%"
+                OR album_names LIKE "%SEARCHTERM%"
             GROUP BY s.song_id, s.title
             ORDER BY s.title, artist_names
          */
@@ -195,12 +198,13 @@ public class DBFunction{
         "FROM song s INNER JOIN artist a ON EXISTS(SELECT * FROM created WHERE c_artist_id = a.artist_id AND c_songid = s.song_id) " + 
         "INNER JOIN genre g ON EXISTS(SELECT * FROM song_genre WHERE song_genre.song_id = s.song_id AND song_genre.genre_id = g.genre_id) " + 
         "INNER JOIN album alb ON EXISTS(SELECT * FROM album_song WHERE album_song.col_album_id = alb.album_id AND album_song.col_song_id = s.song_id) " +
-        "WHERE s.title LIKE ? OR artist_names LIKE ? OR genre_names LIKE ? " +
+        "WHERE s.title LIKE ? OR artist_names LIKE ? OR genre_names LIKE ? OR album_names LIKE ?" +
         "GROUP BY s.song_id, s.title ORDER BY s.title, artist_names" ;
         try(PreparedStatement preparedST = connection.prepareStatement(query)) {
             preparedST.setString(1, "%" + containedText + "%");
             preparedST.setString(2, "%" + containedText + "%");
             preparedST.setString(3, "%" + containedText + "%"); 
+            preparedST.setString(4, "%" + containedText + "%"); 
 
             ResultSet results = preparedST.executeQuery();
             ArrayList<Song> songs = new ArrayList<Song>();
@@ -212,11 +216,10 @@ public class DBFunction{
                                     results.getInt("s.playcount"),  
                                     results.getString("album_names") ) );
             }
-            //TODO: what are you doing with this data lil bro
+            //Now that all added, good to return
+            //Printing the information is the responsibility of the TUI
 
-
-
-
+            return songs;
 
         } catch (SQLException e) {
             System.out.println(e);
@@ -225,7 +228,7 @@ public class DBFunction{
 
 
 
-        return null;
+        
 
     }
     

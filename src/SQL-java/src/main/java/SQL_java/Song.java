@@ -37,6 +37,13 @@ public class Song {
     public void setListenCount(int newCount){
         listenCount = newCount;
     }
+    
+    @Override
+    public String toString(){
+        String result = "";
+        result += id + ", " + name + ", " + artist + ", " + length + listenCount + album;
+        return result;
+    }
 
 
 }
