@@ -10,6 +10,9 @@ import java.sql.Statement;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Properties;
+
+import com.jcraft.jsch.*;
 
 /**
  * This is our class to access and interact with the Database. 
@@ -21,19 +24,49 @@ public class DBFunction{
     private Connection connection;
     private java.util.Date utilDate = new java.util.Date();
     private java.sql.Date currentDate;
+    public static final String DBNAME = "p32001_05";
+    private Session session;
 
     public Connection getConnection(){
         return connection;
     }
 
     public DBFunction() {
+        this.currentDate = new java.sql.Date(utilDate.getTime());
+        
+        int lport = 5432;
+        String rhost = "starbug.cs.rit.edu";
+        int rport = 5432;
+        String user = abc.USERNAME; //change to your username
+        String password = abc.PASSWORD; //change to your password
+        String databaseName = DBNAME; //change to your database name
+
+        String driverName = "org.postgresql.Driver";
+        
         try {
-            Class.forName("org.postgresql.Driver");
-            this.connection = DriverManager.getConnection(abc.DBLink, abc.USERNAME, abc.PASSWORD);
-            if (connection == null) {
-                throw new Exception("Error connecting to the database");
-            }
-            currentDate = new Date(utilDate.getTime());
+            java.util.Properties config = new java.util.Properties();
+            config.put("StrictHostKeyChecking", "no");
+            JSch jsch = new JSch();
+            this.session = jsch.getSession(user, rhost, 22);
+            session.setPassword(password);
+            session.setConfig(config);
+            session.setConfig("PreferredAuthentications","publickey,keyboard-interactive,password");
+            session.connect();
+            System.out.println("Connected");
+            int assigned_port = session.setPortForwardingL(lport, "127.0.0.1", rport);
+            System.out.println("Port Forwarded");
+
+            // Assigned port could be different from 5432 but rarely happens
+            String url = "jdbc:postgresql://127.0.0.1:"+ assigned_port + "/" + databaseName;
+
+            System.out.println("database Url: " + url);
+            Properties props = new Properties();
+            props.put("user", user);
+            props.put("password", password);
+
+            Class.forName(driverName);
+            this.connection = DriverManager.getConnection(url, props);
+
         } catch (Exception e) {
             System.err.println(e);
         }
@@ -156,7 +189,14 @@ public class DBFunction{
      */
     public boolean closeConnection(){
         try{
-            connection.close();
+            if (this.connection != null && !this.connection.isClosed()) {
+                System.out.println("Closing Database Connection");
+                this.connection.close();
+            }
+            if (session != null && session.isConnected()) {
+                System.out.println("Closing SSH Connection");
+                session.disconnect();
+            }
             return true;
         }
         catch (Exception e){
@@ -306,7 +346,11 @@ public class DBFunction{
         DBFunction test = new DBFunction();
         User testUser = test.login("MasterFaster", "RDA");
         System.out.println(testUser);
-        System.out.println(test.listenToSong(40, testUser));
+        System.out.println("testing listening:" );
+        System.out.println(test.listenToSong(42, testUser));
+        System.out.println("Testing Collection Listening: Expecting 2");
+        System.out.println(test.listenToCollection(7093, testUser));
+
 
 
 
