@@ -306,6 +306,11 @@ public class DBFunction{
         DBFunction test = new DBFunction();
         User testUser = test.login("MasterFaster", "RDA");
         System.out.println(testUser);
+        System.out.println(test.listenToSong(40, testUser));
+
+
+
+
         System.out.println(test.closeConnection());
     }
 
