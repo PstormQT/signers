@@ -243,10 +243,11 @@ public class DBFunction{
         pdst.setInt(2, mc_id);
         int rowsAffected = pdst.executeUpdate();
         if (rowsAffected == 1){
-            query = "UPDATE mc_id SET total_time = ?, number_of_songs = ?";
+            query = "UPDATE music_collection SET total_time = ?, number_of_songs = ? WHERE mc_id = ?";
             PreparedStatement pdstII = connection.prepareStatement(query);
-            pdstII.setInt(3, total_time);
-            pdstII.setInt(4, number_of_songs);
+            pdstII.setInt(1, total_time);
+            pdstII.setInt(2, number_of_songs);
+            pdstII.setInt(3, mc_id);
             pdstII.executeUpdate();
             return true;
         }
@@ -276,10 +277,11 @@ public class DBFunction{
         pdst.setInt(2, mc_id);
         int rowsAffected = pdst.executeUpdate();
         if (rowsAffected == 1){
-            query = "UPDATE mc_id SET total_time = ?, number_of_songs = ?";
+            query = "UPDATE music_collection SET total_time = ?, number_of_songs = ? WHERE mc_id = ?";
             PreparedStatement pdstII = connection.prepareStatement(query);
-            pdstII.setInt(3, total_time);
-            pdstII.setInt(4, number_of_songs);
+            pdstII.setInt(1, total_time);
+            pdstII.setInt(2, number_of_songs);
+            pdstII.setInt(3, mc_id);
             pdstII.executeUpdate();
             return true;
         }
@@ -472,11 +474,11 @@ public class DBFunction{
         DBFunction test = new DBFunction();
         // User testUser = test.login("MasterFaster", "RDA");
 
-        System.out.println(test.createCollection("Test", 0, 0, 1));
+        System.out.println(test.createCollection("Test", 10, 1, 1));
         System.out.println("");
-        System.out.println(test.addSongToCollection(1, 1, 10, 1));
+        System.out.println(test.addSongToCollection(2, 1, 20, 2));
         System.out.println("");
-        System.out.println(test.deleteSongFromCollection(1, 1, 0, 0));
+        System.out.println(test.deleteSongFromCollection(2, 1, 10, 1));
         // System.out.println(testUser);
         System.out.println(test.closeConnection());
     }
