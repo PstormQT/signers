@@ -207,13 +207,22 @@ public class DBFunction{
 
 
 
+    public static final String DEFAULT_SORT = "s.title, artist_names";
     /**
      * 
      * @param containedText The text we are searching to be in the title, artists, albums, or genres
+     * @param orderBy, the Ordering we are going by, either DEFAULT_SORT, title, artist_names, genre_names, or release_date
+     * @param ascending, true if asc order, desc otherwise
      * @return An arraylist of all songs with containedText as part of it's title, artist, albums, or genres
      * @author Antonio Bicknell <acb930>
      */
-    public ArrayList<Song> searchSongs(String containedText){
+    public ArrayList<Song> searchSongs(String containedText, String orderBy, boolean ascending){
+        if(ascending){
+        orderBy += " ASC ";
+        }
+        else{
+            orderBy += " DESC ";
+        }
 /**THE QUERY FOR THIS FUNCTION IS AS FOLLOWS:
         SELECT s.song_id, s.title, s.length, s.playcount, string_agg(a.name, ', ' ORDER BY a.name) AS artist_names,
                                             string_agg(g.genre_name, ', 'ORDER BY g.genre_name) AS genre_names,
@@ -231,7 +240,7 @@ public class DBFunction{
             OR string_agg(a.name, ', ') LIKE'%bob%'
             OR string_agg(g.genre_name, ', ') LIKE '%bob%'
             OR string_agg(alb.name, ', ') LIKE '%bob%'
-        ORDER BY s.title, artist_names
+        ORDER BY title, artist_names
 
          */
 
@@ -242,12 +251,13 @@ public class DBFunction{
         "INNER JOIN album alb ON EXISTS(SELECT * FROM album_song WHERE album_song.col_album_id = alb.album_id AND album_song.col_song_id = s.song_id) " +
         "WHERE TRUE GROUP BY s.song_id, s.title HAVING s.title LIKE ? OR STRING_AGG(a.name, ', ') LIKE ? " + 
         "OR STRING_AGG(g.genre_name, ', ') LIKE ? OR STRING_AGG(alb.name, ', ') LIKE ?" +
-        "ORDER BY s.title, artist_names" ;
+        "ORDER BY ?" ;
         try(PreparedStatement preparedST = connection.prepareStatement(query)) {
             preparedST.setString(1, "%" + containedText + "%");
             preparedST.setString(2, "%" + containedText + "%");
             preparedST.setString(3, "%" + containedText + "%"); 
             preparedST.setString(4, "%" + containedText + "%"); 
+            preparedST.setString(5, orderBy);
 
             ResultSet results = preparedST.executeQuery();
             ArrayList<Song> songs = new ArrayList<Song>();
@@ -358,7 +368,7 @@ public class DBFunction{
         //System.out.println(test.listenToCollection(7093, testUser));
 
         System.out.println("Testing Listening");
-        ArrayList<Song> songs = test.searchSongs("bob");
+        ArrayList<Song> songs = test.searchSongs("bob", DEFAULT_SORT, true);
         for(Song s : songs){
             System.out.println(s);
         }
