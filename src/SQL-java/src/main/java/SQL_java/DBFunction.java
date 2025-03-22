@@ -184,29 +184,25 @@ public class DBFunction{
      * Searches music collections by name and prints out list
      * @param name
      * @param User
-     * @return List of all collection with that name from that user
+     * @return List of all collections with that name from that user
      * @author Andrew Rosenhaus
      */
-    public ArrayList<MusicCollection> collectionSearch(String name, User user){
+    public ArrayList<MusicCollection> collectionSearch(String name, Integer userId){
         ResultSet results = null;
-        String query = "SELECT name, number_of_songs, total_time, mc_id, user_id FROM music_collection WHERE LOWER(name) = ? AND user_id = ? ORDER BY name ASC";
-        try(PreparedStatement pdst = connection.prepareStatement(query)) {
-            pdst.setString(1, name);
-            pdst.setInt(2, user.getId());
+        String query = "SELECT * FROM music_collection WHERE LOWER(name) LIKE LOWER(?) AND user_id = ? ORDER BY name ASC";
+        ArrayList<MusicCollection> returnList = new ArrayList<>();
+        try(PreparedStatement pdst = connection.prepareStatement(query);) {
+            pdst.setString(1, "%" + name + "%");
+            pdst.setInt(2, userId);
             results = pdst.executeQuery();
-            ArrayList<MusicCollection> returnList = new ArrayList<>();
-            if(!results.next()){
-                System.out.println( "No results found for query.");
-                return null;
-            }
-            while (results.next())
-                for (int j = 1; j <= 3; j++){
-                    System.out.print(results.getString(j) + ", ");
-                }
+            System.out.println("Results:");
+            while (results.next()){
                 returnList.add(new MusicCollection(results.getString("name"), results.getInt("total_time"), results.getInt("number_of_songs"), results.getInt("mc_id"), results.getInt("user_id")));
-                System.out.println("");
-                results.next();
-                return returnList;
+            }
+            for (int i = 0; i < returnList.size(); i++){
+                System.out.println(returnList.get(i));
+            }
+            return returnList;
         }
         catch (SQLException e){
             System.out.println(e);
@@ -251,7 +247,8 @@ public class DBFunction{
                 pdstII.setString(1, name);
                 results = pdstII.executeQuery();
                 if (results.next()){
-                    return new MusicCollection(results.getString("name"), results.getInt("total_time"), results.getInt("number_of_songs"), results.getInt("mc_id"), results.getInt("user_id"));
+                    return new MusicCollection(results.getString("name"), results.getInt("total_time"),
+                    results.getInt("number_of_songs"), results.getInt("mc_id"), results.getInt("user_id"));
                 }
                 else{return null;}
             }
@@ -378,13 +375,13 @@ public class DBFunction{
      * @author Andrew Rosenhaus
      */
 
-    public boolean deleteCollection(MusicCollection collection) {
+    public boolean deleteCollection(Integer mc_id) {
         ResultSet results = null;
 
         try {
             String query = "DELETE FROM music_collection WHERE mc_id = ?";
             PreparedStatement pdst = connection.prepareStatement(query);
-            pdst.setInt(1, collection.getMCId());
+            pdst.setInt(1, mc_id);
             pdst.executeQuery();
             return true;
         }
@@ -434,11 +431,8 @@ public class DBFunction{
         DBFunction test = new DBFunction();
         User testUser = test.login("MasterFaster", "RDA");
         System.out.println(testUser);
-        MusicCollection collection1 = test.createCollection("Test", 0, 0, testUser.getId());
-        MusicCollection collection2 = test.createCollection("Test", 0, 0, testUser.getId());
-        test.collectionSearch("Test", testUser);
-        test.modifyCollectionName(collection1, "Update");
-        test.deleteCollection(collection2);
+        test.createCollection("TestTime", 0, 0, testUser.getId());
+        test.collectionSearch("TestTime", testUser.getId());
         System.out.println(test.closeConnection());
     }
 }
