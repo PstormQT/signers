@@ -34,17 +34,19 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-web</artifactId>
 		</dependency>
+
+
+		<!-- Add SSH tunneling -->
 		<dependency>
-  			<groupId>com.github.mwiede</groupId>
-  			<artifactId>jsch</artifactId>
-  			<version>0.2.24</version>
+			<groupId>com.github.mwiede</groupId>
+			<artifactId>jsch</artifactId>
+			<version>0.2.24</version>
 		</dependency>
-		
-        <dependency>
-           <groupId>org.postgresql</groupId>
-           <artifactId>postgresql</artifactId>
-           <version>42.7.5</version>
-        </dependency>
+		<dependency>
+			<groupId>org.postgresql</groupId>
+			<artifactId>postgresql</artifactId>
+			<scope>runtime</scope>
+		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-test</artifactId>
