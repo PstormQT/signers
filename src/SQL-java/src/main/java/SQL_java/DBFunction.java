@@ -14,7 +14,6 @@ import java.sql.PreparedStatement;
 import java.util.ArrayList;
 import java.util.Properties;
 
-
 /**
  * This is our class to access and interact with the Database. 
  * Any method/function that directly accesses the Database will and should be in here
@@ -190,7 +189,7 @@ public class DBFunction{
      */
     public ArrayList<MusicCollection> collectionSearch(String name, User user){
         ResultSet results = null;
-        String query = "SELECT name, number_of_songs, total_time FROM music_collection WHERE LOWER(name) LIKE ? AND user_id = ? ORDER BY name ASC";
+        String query = "SELECT name, number_of_songs, total_time, mc_id, user_id FROM music_collection WHERE LOWER(name) = ? AND user_id = ? ORDER BY name ASC";
         try(PreparedStatement pdst = connection.prepareStatement(query)) {
             pdst.setString(1, name);
             pdst.setInt(2, user.getId());
@@ -204,7 +203,7 @@ public class DBFunction{
                 for (int j = 1; j <= 3; j++){
                     System.out.print(results.getString(j) + ", ");
                 }
-                returnList.add(new MusicCollection(results.getString(1), results.getInt(3), results.getInt(2)));
+                returnList.add(new MusicCollection(results.getString("name"), results.getInt("total_time"), results.getInt("number_of_songs"), results.getInt("mc_id"), results.getInt("user_id")));
                 System.out.println("");
                 results.next();
                 return returnList;
@@ -226,6 +225,119 @@ public class DBFunction{
             }
     }
 
+     /**
+     * Creates a collection for the user
+     * @param name  the name of the collection
+     * @param total_time   the total time of the songs in the collection 
+     * @param number_of_songs   the total amount of songs in the collection
+     * @param user_id   the id of the user making the collection
+     * @return  a boolean if the collection was created successfully or not 
+     * @author Katie Richardson
+     */
+    public MusicCollection createCollection(String name, Integer total_time, Integer number_of_songs, Integer user_id){
+        String query = "INSERT INTO music_collection (name, total_time, number_of_songs, user_id) VALUES (?,?,?,?)" ;
+        try(PreparedStatement pdst = connection.prepareStatement(query);){
+        pdst.setString(1, name);
+        pdst.setInt(2, total_time);
+        pdst.setInt(3, number_of_songs);
+        pdst.setInt(4, user_id);
+        int rowsAffected = pdst.executeUpdate();
+        
+        if (rowsAffected == 1){
+            ResultSet results;
+            try{
+                String query2 = "SELECT mc_id, name, total_time, number_of_songs, user_id FROM music_collection WHERE name = ?";
+                PreparedStatement pdstII = connection.prepareStatement(query2);
+                pdstII.setString(1, name);
+                results = pdstII.executeQuery();
+                if (results.next()){
+                    return new MusicCollection(results.getString("name"), results.getInt("total_time"), results.getInt("number_of_songs"), results.getInt("mc_id"), results.getInt("user_id"));
+                }
+                else{return null;}
+            }
+            catch(SQLException er){
+                System.out.println(er);
+                return null;
+            }
+        }
+        else{
+            return null;
+        }
+        }
+        catch (SQLException e) {
+            System.out.println(e);
+            return null;
+        }
+    }
+
+    /**
+     * Deletes a song from a collection and updates the number of songs and total time for that collection
+     * @param song_id  the ID of the song/album to be deleted from the collection
+     * @param mc_id    the ID of the collection
+     * @param total_time   the total time of the songs in the collection 
+     * @param number_of_songs   the total amount of songs in the collection
+     * @return  a boolean if the collection was created successfully or not 
+     * @author Katie Richardson
+     */
+    public boolean deleteSongFromCollection(Integer song_id, Integer mc_id, Integer total_time, Integer number_of_songs){
+        String query = "DELETE FROM collection_song WHERE song_id = ? AND mc_id = ?";
+        try(PreparedStatement pdst = connection.prepareStatement(query);){
+        pdst.setInt(1, song_id);
+        pdst.setInt(2, mc_id);
+        int rowsAffected = pdst.executeUpdate();
+        if (rowsAffected == 1){
+            query = "UPDATE music_collection SET total_time = ?, number_of_songs = ? WHERE mc_id = ?";
+            PreparedStatement pdstII = connection.prepareStatement(query);
+            pdstII.setInt(1, total_time);
+            pdstII.setInt(2, number_of_songs);
+            pdstII.setInt(3, mc_id);
+            pdstII.executeUpdate();
+            return true;
+        }
+        else{
+            return false;
+        }
+        }
+        catch (SQLException e) {
+            System.out.println(e);
+            return false;
+        }
+    }
+
+    /**
+     * Adds a song to a collection and updates the number of songs and total time for that collection
+     * @param song_id  the ID of the song/album to be deleted from the collection
+     * @param mc_id    the ID of the collection
+     * @param total_time   the total time of the songs in the collection 
+     * @param number_of_songs   the total amount of songs in the collection
+     * @return  a boolean if the collection was created successfully or not 
+     * @author Katie Richardson
+     */
+    public boolean addSongToCollection(Integer song_id, Integer mc_id, Integer total_time, Integer number_of_songs){
+        String query = "INSERT INTO collection_song (song_id, mc_id) VALUES (?,?)";
+        try(PreparedStatement pdst = connection.prepareStatement(query);){
+        pdst.setInt(1, song_id);
+        pdst.setInt(2, mc_id);
+        int rowsAffected = pdst.executeUpdate();
+        if (rowsAffected == 1){
+            query = "UPDATE music_collection SET total_time = ?, number_of_songs = ? WHERE mc_id = ?";
+            PreparedStatement pdstII = connection.prepareStatement(query);
+            pdstII.setInt(1, total_time);
+            pdstII.setInt(2, number_of_songs);
+            pdstII.setInt(3, mc_id);
+            pdstII.executeUpdate();
+            return true;
+        }
+        else{
+            return false;
+        }
+        }
+        catch (SQLException e) {
+            System.out.println(e);
+            return false;
+        }
+    }
+
     /**
      * Updates name of collection
      * @param name
@@ -233,11 +345,12 @@ public class DBFunction{
      * @returns true if successful, false if error
      * @author Andrew Rosenhaus
      */
-    public boolean modifyCollectionName(String name, String updatedName) {
+    public boolean modifyCollectionName(MusicCollection collection, String updatedName) {
         ResultSet results = null;
-        String query = "UPDATE music_collection FROM name = ? WHERE LOWER(name) LIKE ?";
+        String query = "UPDATE music_collection SET name = ? WHERE mc_id = ?";
         try(PreparedStatement pdst = connection.prepareStatement(query)) {
-            pdst.setString(1, name);
+            pdst.setString(1, updatedName);
+            pdst.setInt(2, collection.getMCId());
             results = pdst.executeQuery();
             return true;
         }
@@ -265,13 +378,13 @@ public class DBFunction{
      * @author Andrew Rosenhaus
      */
 
-    public boolean deleteCollection(Integer mc_id) {
+    public boolean deleteCollection(MusicCollection collection) {
         ResultSet results = null;
 
         try {
             String query = "DELETE FROM music_collection WHERE mc_id = ?";
             PreparedStatement pdst = connection.prepareStatement(query);
-            pdst.setInt(1, mc_id);
+            pdst.setInt(1, collection.getMCId());
             pdst.executeQuery();
             return true;
         }
@@ -321,7 +434,11 @@ public class DBFunction{
         DBFunction test = new DBFunction();
         User testUser = test.login("MasterFaster", "RDA");
         System.out.println(testUser);
-        test.collectionSearch("Synergistic object-orien", testUser);
+        MusicCollection collection1 = test.createCollection("Test", 0, 0, testUser.getId());
+        MusicCollection collection2 = test.createCollection("Test", 0, 0, testUser.getId());
+        test.collectionSearch("Test", testUser);
+        test.modifyCollectionName(collection1, "Update");
+        test.deleteCollection(collection2);
         System.out.println(test.closeConnection());
     }
 }
