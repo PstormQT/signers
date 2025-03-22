@@ -1,18 +1,18 @@
 package SQL_java;
 
-import com.jcraft.jsch.*;
-
-import java.lang.Thread.State;
-import java.lang.reflect.Executable;
 import java.sql.Connection;
+import java.sql.Date;
 import java.sql.DriverManager;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.sql.Date;
-import java.sql.PreparedStatement;
+import java.sql.Timestamp;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Properties;
+
+import com.jcraft.jsch.*;
 
 /**
  * This is our class to access and interact with the Database. 
@@ -26,6 +26,10 @@ public class DBFunction{
     private java.sql.Date currentDate;
     public static final String DBNAME = "p32001_05";
     private Session session;
+
+    public Connection getConnection(){
+        return connection;
+    }
 
     public DBFunction() {
         this.currentDate = new java.sql.Date(utilDate.getTime());
@@ -66,11 +70,8 @@ public class DBFunction{
         } catch (Exception e) {
             System.err.println(e);
         }
-    }        
-
-    public Connection getConnection(){
-        return connection;
     }
+
 
     public void testAccessData(String table_name){
         Statement statement;
@@ -92,7 +93,7 @@ public class DBFunction{
     /**
      * Retrieves an existing User's id, username, and password, and creates a User object
      * We were going to have a class for this, but anything that accesses the DB should be done in this class
-     *  for ease of use and simplicity
+     *  for ease of use and simplicity      
      * @param username  The User's username
      * @param password  The User's password
      * @return          A User object if an existing user with the credentials is found. Null if otherwise
@@ -427,12 +428,177 @@ public class DBFunction{
     }
 
 
+
+    public static final String DEFAULT_SORT = "s.title, artist_names";
+    /**
+     * 
+     * @param containedText The text we are searching to be in the title, artists, albums, or genres
+     * @param orderBy, the Ordering we are going by, either DEFAULT_SORT, title, artist_names, genre_names, or release_date
+     * @param ascending, true if asc order, desc otherwise
+     * @return An arraylist of all songs with containedText as part of it's title, artist, albums, or genres
+     * @author Antonio Bicknell <acb930>
+     */
+    public ArrayList<Song> searchSongs(String containedText, String orderBy, boolean ascending){
+        if(ascending){
+        orderBy += " ASC ";
+        }
+        else{
+            orderBy += " DESC ";
+        }
+/**THE QUERY FOR THIS FUNCTION IS AS FOLLOWS:
+        SELECT s.song_id, s.title, s.length, s.playcount, string_agg(a.name, ', ' ORDER BY a.name) AS artist_names,
+                                            string_agg(g.genre_name, ', 'ORDER BY g.genre_name) AS genre_names,
+                                            string_agg(alb.name, ', ' ORDER BY alb.name) AS album_names
+        FROM song s INNER JOIN artist a
+            ON EXISTS(SELECT * FROM created WHERE c_artist_id = a.artist_id AND c_songid = s.song_id)
+        INNER JOIN genre g
+            ON EXISTS(SELECT * FROM song_genre WHERE song_genre.song_id = s.song_id AND song_genre.genre_id = g.genre_id)
+        INNER JOIN album alb
+            ON EXISTS(SELECT * FROM album_song WHERE album_song.col_album_id = alb.album_id     AND album_song.col_song_id = s.song_id)
+        WHERE TRUE
+        GROUP BY s.song_id, s.title
+        HAVING
+            s.title LIKE '%bob%'
+            OR string_agg(a.name, ', ') LIKE'%bob%'
+            OR string_agg(g.genre_name, ', ') LIKE '%bob%'
+            OR string_agg(alb.name, ', ') LIKE '%bob%'
+        ORDER BY title, artist_names
+
+         */
+
+        String query = "SELECT s.song_id, s.title, s.length, s.playcount, STRING_AGG(a.name, ', ' ORDER BY a.name) AS artist_names, STRING_AGG(g.genre_name, ', ' ORDER BY g.genre_name) as genre_names, " + 
+        "STRING_AGG(alb.name, ', ' ORDER BY alb.name) AS album_names " +
+        "FROM song s INNER JOIN artist a ON EXISTS(SELECT * FROM created WHERE c_artist_id = a.artist_id AND c_songid = s.song_id) " + 
+        "INNER JOIN genre g ON EXISTS(SELECT * FROM song_genre WHERE song_genre.song_id = s.song_id AND song_genre.genre_id = g.genre_id) " + 
+        "INNER JOIN album alb ON EXISTS(SELECT * FROM album_song WHERE album_song.col_album_id = alb.album_id AND album_song.col_song_id = s.song_id) " +
+        "WHERE TRUE GROUP BY s.song_id, s.title HAVING s.title LIKE ? OR STRING_AGG(a.name, ', ') LIKE ? " + 
+        "OR STRING_AGG(g.genre_name, ', ') LIKE ? OR STRING_AGG(alb.name, ', ') LIKE ?" +
+        "ORDER BY ?" ;
+        try(PreparedStatement preparedST = connection.prepareStatement(query)) {
+            preparedST.setString(1, "%" + containedText + "%");
+            preparedST.setString(2, "%" + containedText + "%");
+            preparedST.setString(3, "%" + containedText + "%"); 
+            preparedST.setString(4, "%" + containedText + "%"); 
+            preparedST.setString(5, orderBy);
+
+            ResultSet results = preparedST.executeQuery();
+            ArrayList<Song> songs = new ArrayList<Song>();
+            while(results.next()){
+                songs.add(new Song( results.getInt("song_id"), 
+                                    results.getString("title"),
+                                    results.getString("artist_names"),
+                                    results.getInt("length"),
+                                    results.getInt("playcount"),  
+                                    results.getString("album_names") ) );
+            }
+            //Now that all added, good to return
+            //Printing the information is the responsibility of the TUI
+
+            return songs;
+
+        } catch (SQLException e) {
+            System.out.println(e);
+            return null;
+        }
+
+
+
+        
+
+    }
+    
+
+    /**
+     * Listens to a specific song with a particular ID
+     * And also updates the listen count of the song
+     * @param songID The ID of the song we are listening to 
+     * @param user The user that is listening to the song
+     * @return Whether or not a row was changed, as a boolean
+     * @author Antonio Bicknell <acb9430>
+     */
+    public boolean listenToSong(int songID, User user){
+        String query = "INSERT INTO listens_to (list_user_id, list_song_id, date_time_listened) VALUES (?,?,?)";
+        String updateQuery = "UPDATE song SET playcount = playcount + 1 WHERE song_id = ?";
+        try(PreparedStatement insertST = connection.prepareStatement(query);
+        PreparedStatement updateST = connection.prepareStatement(updateQuery)  ){
+        
+        insertST.setInt(1, user.getId());
+        insertST.setInt(2, songID);
+        insertST.setTimestamp(3, Timestamp.from(Instant.now()) );
+        
+        
+        updateST.setInt(1, songID);
+        int rowsAffected = 0;
+        rowsAffected += insertST.executeUpdate();
+        rowsAffected += updateST.executeUpdate();
+
+
+
+        return rowsAffected > 0;
+        }
+        catch(SQLException e){
+            System.err.println(e);
+            return false;
+            }
+        
+
+    }
+
+    /**
+     * 
+     * @param colID the ID of the Collection we are listening to
+     * @param user The User listening to the collection
+     * @return Number of rows changed
+     * @author Antonio Bicknell <acb9430>
+     */
+    public int listenToCollection(int colID, User user){
+        String insertQuery = "INSERT INTO listens_to (list_user_id,  list_song_id, date_time_listened) SELECT ?, song_id, ? FROM collection_song WHERE mc_id = ?";
+        String updatequery = "UPDATE song SET playcount = playcount + 1 WHERE song_id IN (SELECT song_id FROM collection_song WHERE mc_id = ?)";
+        try(PreparedStatement insertStatement = connection.prepareStatement(insertQuery);
+            PreparedStatement updateStatement = connection.prepareStatement(updatequery)   ){
+                insertStatement.setInt(1, user.getId());
+                insertStatement.setTimestamp(2, Timestamp.from(Instant.now()) );
+                insertStatement.setInt(3, colID);
+
+                updateStatement.setInt(1, colID);
+
+                int rowsAffected = 0;
+                rowsAffected += insertStatement.executeUpdate();
+                rowsAffected += updateStatement.executeUpdate();
+                return rowsAffected;
+
+            }
+             catch (SQLException e) {
+                System.out.println(e);
+                return 0;
+            }
+
+    }
+
+
+    
     public static void main(String[] args) {
         DBFunction test = new DBFunction();
         User testUser = test.login("MasterFaster", "RDA");
         System.out.println(testUser);
-        test.createCollection("TestTime", 0, 0, testUser.getId());
-        test.collectionSearch("TestTime", testUser.getId());
+        
+        
+        // The following lines fail because date_time_listened is not part of the key of Listens_to
+        //System.out.println("testing listening:" );
+        //System.out.println(test.listenToSong(42, testUser));
+        //System.out.println("Testing Collection Listening: Expecting 2");
+        //System.out.println(test.listenToCollection(7093, testUser));
+
+        System.out.println("Testing Listening");
+        ArrayList<Song> songs = test.searchSongs("bob", DEFAULT_SORT, true);
+        for(Song s : songs){
+            System.out.println(s);
+        }
+
+
+
+
+
         System.out.println(test.closeConnection());
     }
 }
