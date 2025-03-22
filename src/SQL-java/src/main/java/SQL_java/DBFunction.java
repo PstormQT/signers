@@ -198,7 +198,7 @@ public class DBFunction{
     }
 
     /**
-     * 
+     * Creates a collection for the user
      * @param name  the name of the collection
      * @param total_time   the total time of the songs in the collection 
      * @param number_of_songs   the total amount of songs in the collection
@@ -207,16 +207,14 @@ public class DBFunction{
      * @author Katie Richardson
      */
     public boolean createCollection(String name, Integer total_time, Integer number_of_songs, Integer user_id){
-        ResultSet results;
-        try{
         String query = "INSERT INTO music_collection (name, total_time, number_of_songs, user_id) VALUES (?,?,?,?)" ;
-        PreparedStatement pdst = connection.prepareStatement(query);
+        try(PreparedStatement pdst = connection.prepareStatement(query);){
         pdst.setString(1, name);
         pdst.setInt(2, total_time);
         pdst.setInt(3, number_of_songs);
         pdst.setInt(4, user_id);
-        results = pdst.executeQuery();
-        if (results.next()){
+        int rowsAffected = pdst.executeUpdate();
+        if (rowsAffected == 1){
             return true;
         }
         else{
@@ -239,14 +237,12 @@ public class DBFunction{
      * @author Katie Richardson
      */
     public boolean deleteSongFromCollection(Integer song_id, Integer mc_id, Integer total_time, Integer number_of_songs){
-        ResultSet results;
-        try{
         String query = "DELETE FROM collection_song WHERE song_id = ? AND mc_id = ?";
-        PreparedStatement pdst = connection.prepareStatement(query);
+        try(PreparedStatement pdst = connection.prepareStatement(query);){
         pdst.setInt(1, song_id);
         pdst.setInt(2, mc_id);
-        results = pdst.executeQuery();
-        if (results.next()){
+        int rowsAffected = pdst.executeUpdate();
+        if (rowsAffected == 1){
             query = "UPDATE mc_id SET total_time = ?, number_of_songs = ?";
             PreparedStatement pdstII = connection.prepareStatement(query);
             pdstII.setInt(3, total_time);
@@ -274,14 +270,12 @@ public class DBFunction{
      * @author Katie Richardson
      */
     public boolean addSongToCollection(Integer song_id, Integer mc_id, Integer total_time, Integer number_of_songs){
-        ResultSet results;
-        try{
         String query = "INSERT INTO collection_song (song_id, mc_id) VALUES (?,?)";
-        PreparedStatement pdst = connection.prepareStatement(query);
+        try(PreparedStatement pdst = connection.prepareStatement(query);){
         pdst.setInt(1, song_id);
         pdst.setInt(2, mc_id);
-        results = pdst.executeQuery();
-        if (results.next()){
+        int rowsAffected = pdst.executeUpdate();
+        if (rowsAffected == 1){
             query = "UPDATE mc_id SET total_time = ?, number_of_songs = ?";
             PreparedStatement pdstII = connection.prepareStatement(query);
             pdstII.setInt(3, total_time);
@@ -478,7 +472,11 @@ public class DBFunction{
         DBFunction test = new DBFunction();
         // User testUser = test.login("MasterFaster", "RDA");
 
-        System.out.println(test.createCollection("Peter Dang", 1800, 30, 1));
+        System.out.println(test.createCollection("Test", 0, 0, 1));
+        System.out.println("");
+        System.out.println(test.addSongToCollection(1, 1, 10, 1));
+        System.out.println("");
+        System.out.println(test.deleteSongFromCollection(1, 1, 0, 0));
         // System.out.println(testUser);
         System.out.println(test.closeConnection());
     }
