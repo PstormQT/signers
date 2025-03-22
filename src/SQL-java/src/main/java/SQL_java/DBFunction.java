@@ -13,6 +13,7 @@ import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.util.ArrayList;
 import java.util.Properties;
+import java.util.Scanner;
 
 /**
  * This is our class to access and interact with the Database. 
@@ -247,6 +248,7 @@ public class DBFunction{
                 pdstII.setString(1, name);
                 results = pdstII.executeQuery();
                 if (results.next()){
+                    System.out.println("Your Collection ID for " + results.getString("name") + " is " + results.getInt("mc_id") + ".");
                     return new MusicCollection(results.getString("name"), results.getInt("total_time"),
                     results.getInt("number_of_songs"), results.getInt("mc_id"), results.getInt("user_id"));
                 }
@@ -276,18 +278,17 @@ public class DBFunction{
      * @return  a boolean if the collection was created successfully or not 
      * @author Katie Richardson
      */
-    public boolean deleteSongFromCollection(Integer song_id, Integer mc_id, Integer total_time, Integer number_of_songs){
+    public boolean deleteSongFromCollection(Integer song_id, Integer mc_id, Integer song_length){
         String query = "DELETE FROM collection_song WHERE song_id = ? AND mc_id = ?";
         try(PreparedStatement pdst = connection.prepareStatement(query);){
         pdst.setInt(1, song_id);
         pdst.setInt(2, mc_id);
         int rowsAffected = pdst.executeUpdate();
         if (rowsAffected == 1){
-            query = "UPDATE music_collection SET total_time = ?, number_of_songs = ? WHERE mc_id = ?";
+            query = "UPDATE music_collection SET total_time = total_time - ?, number_of_songs = number_of_songs - 1 WHERE mc_id = ?";
             PreparedStatement pdstII = connection.prepareStatement(query);
-            pdstII.setInt(1, total_time);
-            pdstII.setInt(2, number_of_songs);
-            pdstII.setInt(3, mc_id);
+            pdstII.setInt(1, song_length);
+            pdstII.setInt(2, mc_id);
             pdstII.executeUpdate();
             return true;
         }
@@ -310,18 +311,17 @@ public class DBFunction{
      * @return  a boolean if the collection was created successfully or not 
      * @author Katie Richardson
      */
-    public boolean addSongToCollection(Integer song_id, Integer mc_id, Integer total_time, Integer number_of_songs){
+    public boolean addSongToCollection(Integer song_id, Integer mc_id, Integer song_length){
         String query = "INSERT INTO collection_song (song_id, mc_id) VALUES (?,?)";
         try(PreparedStatement pdst = connection.prepareStatement(query);){
         pdst.setInt(1, song_id);
         pdst.setInt(2, mc_id);
         int rowsAffected = pdst.executeUpdate();
         if (rowsAffected == 1){
-            query = "UPDATE music_collection SET total_time = ?, number_of_songs = ? WHERE mc_id = ?";
+            query = "UPDATE music_collection SET total_time = total_time + ?, number_of_songs = number_of_songs + 1 WHERE mc_id = ?";
             PreparedStatement pdstII = connection.prepareStatement(query);
-            pdstII.setInt(1, total_time);
-            pdstII.setInt(2, number_of_songs);
-            pdstII.setInt(3, mc_id);
+            pdstII.setInt(1, song_length);
+            pdstII.setInt(2, mc_id);
             pdstII.executeUpdate();
             return true;
         }
@@ -342,12 +342,12 @@ public class DBFunction{
      * @returns true if successful, false if error
      * @author Andrew Rosenhaus
      */
-    public boolean modifyCollectionName(MusicCollection collection, String updatedName) {
+    public boolean modifyCollectionName(Integer MCId, String updatedName) {
         ResultSet results = null;
         String query = "UPDATE music_collection SET name = ? WHERE mc_id = ?";
         try(PreparedStatement pdst = connection.prepareStatement(query)) {
             pdst.setString(1, updatedName);
-            pdst.setInt(2, collection.getMCId());
+            pdst.setInt(2, MCId);
             results = pdst.executeQuery();
             return true;
         }
@@ -429,10 +429,69 @@ public class DBFunction{
 
     public static void main(String[] args) {
         DBFunction test = new DBFunction();
+        Scanner scanner = new Scanner(System.in);
         User testUser = test.login("MasterFaster", "RDA");
         System.out.println(testUser);
-        test.createCollection("TestTime", 0, 0, testUser.getId());
-        test.collectionSearch("TestTime", testUser.getId());
-        System.out.println(test.closeConnection());
+        boolean sentinal = true;
+        System.out.println("Welcome to the Music Database!");
+        while(sentinal){
+            System.out.println("Collections    Song     User    Quit");
+            String input = scanner.nextLine().toLowerCase();
+            if (input.equals("quit")){
+                sentinal = false;
+                test.closeConnection();
+            }
+            if (input.equals("collection")){
+                System.out.println("Create    Add Song   Delete Song    Change Name    Delete Collection    Search Collections");
+                String input2 = scanner.nextLine().toLowerCase();
+                if(input2.equals("create")){
+                    System.out.println("Input the desired name.");
+                    String name = scanner.nextLine();
+                    test.createCollection(name, 0, 0, testUser.getId());
+                }
+                if(input2.equals("add song")){
+                    System.out.println("Input the ID of the song you want to add.");
+                    Integer songId = scanner.nextInt();
+                    System.out.println("Input the ID of the collection you want to modify.");
+                    Integer MCID = scanner.nextInt();
+                    System.out.println("Input the length of the song you want to add.");
+                    Integer songLength = scanner.nextInt();
+                    test.addSongToCollection(songId, MCID, songLength);
+                }
+                if(input2.equals("delete song")){
+                    System.out.println("Input the ID of the song you want to delete.");
+                    Integer songId = scanner.nextInt();
+                    System.out.println("Input the ID of the collection you want to modify.");
+                    Integer MCID = scanner.nextInt();
+                    System.out.println("Input the length of the song you want to delete.");
+                    Integer songLength = scanner.nextInt();
+                    test.addSongToCollection(songId, MCID, songLength);
+                }
+                if(input2.equals("change name")){
+                    System.out.println("Input the ID of the collection you want to change the name of.");
+                    Integer mc_id = scanner.nextInt();
+                    System.out.println("Input the desired name.");
+                    String name = scanner.nextLine().toLowerCase();
+                    test.modifyCollectionName(mc_id, name);
+                }
+                if(input2.equals("delete collection")){
+                    System.out.println("Input the ID of the collection you want to delete.");
+                    Integer mc_id = scanner.nextInt();
+                    test.deleteCollection(mc_id);
+                }
+                if(input2.equals("search collections")){
+                    System.out.println("Input the desired name to search.");
+                    String name = scanner.nextLine().toLowerCase();
+                    test.collectionSearch(name, testUser.getId());
+
+                }
+            }
+            if (input.equals("song")){
+                System.out.println("Work in Progress!");
+            }
+            if (input.equals("user")){
+                System.out.println("Work in Progress!");
+            }
+        }
     }
 }
