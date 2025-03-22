@@ -1,20 +1,15 @@
 package SQL_java;
 
-import java.lang.Thread.State;
-import java.lang.reflect.Executable;
 import java.sql.Connection;
+import java.sql.Date;
 import java.sql.DriverManager;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.ArrayList;
-
-import org.apache.commons.lang3.ObjectUtils.Null;
-
-import java.sql.Date;
-import java.sql.PreparedStatement;
 
 /**
  * This is our class to access and interact with the Database. 
@@ -171,12 +166,63 @@ public class DBFunction{
     }
 
 
-    public ArrayList<Song> searchSongs(String containedText, String order){
-        if (order == null){
-            //odrer by title, then artist name (first artist name alphabetically)
-            order = "TITLE, (SELECT )";
+    /**
+     * 
+     * @param containedText
+     * @return
+     */
+    public ArrayList<Song> searchSongs(String containedText){
+                /**QUERY is as follows
+         * SELECT s.song_id, s.title, s.length, s.playcount,  string_agg(a.name, ', ' ORDER BY a.name) AS artist_names,
+                            string_agg(g.genre_name, ', 'ORDER BY g.genre_name) AS genre_names,
+                            string_agg(alb.name, ', ' ORDER BY alb.name) as album_names
+            FROM song s INNER JOIN artist a
+                ON EXISTS(SELECT * FROM created WHERE c_artist_id = a.artist_id AND c_songid = s.song_id)
+            INNER JOIN genre g
+                ON EXISTS(SELECT * FROM song_genre WHERE song_genre.song_id = s.song_id AND song_genre.genre_id = g.genre_id)
+            INNER JOIN album alb
+                ON EXISTS(SELECT * FROM album_song WHERE album_song.col_album_id = alb.album_id AND album_song.col_song_id = s.song_id)
+            WHERE
+                s.title LIKE "%SEARCHTERM%"
+                OR artist_names LIKE "%SEARCHTERM%"
+                OR genre_names LIKE "%SEARCHTERM%"
+            GROUP BY s.song_id, s.title
+            ORDER BY s.title, artist_names
+         */
+
+        String query = "SELECT s.song_id, s.title, s.length, s.playcount, string_agg(a.name, ', ' ORDER BY a.name) AS artist_names, string_agg(g.genre_name, ', 'ORDER BY g.genre_name) as genre_names " + 
+        "string_agg(alb.name, ', 'ORDER BY alb.name) AS album_names " +
+        "FROM song s INNER JOIN artist a ON EXISTS(SELECT * FROM created WHERE c_artist_id = a.artist_id AND c_songid = s.song_id) " + 
+        "INNER JOIN genre g ON EXISTS(SELECT * FROM song_genre WHERE song_genre.song_id = s.song_id AND song_genre.genre_id = g.genre_id) " + 
+        "INNER JOIN album alb ON EXISTS(SELECT * FROM album_song WHERE album_song.col_album_id = alb.album_id AND album_song.col_song_id = s.song_id) " +
+        "WHERE s.title LIKE ? OR artist_names LIKE ? OR genre_names LIKE ? " +
+        "GROUP BY s.song_id, s.title ORDER BY s.title, artist_names" ;
+        try(PreparedStatement preparedST = connection.prepareStatement(query)) {
+            preparedST.setString(1, "%" + containedText + "%");
+            preparedST.setString(2, "%" + containedText + "%");
+            preparedST.setString(3, "%" + containedText + "%"); 
+
+            ResultSet results = preparedST.executeQuery();
+            ArrayList<Song> songs = new ArrayList<Song>();
+            while(results.next()){
+                songs.add(new Song( results.getInt("s.song_id"), 
+                                    results.getString("s.title"),
+                                    results.getString("artist_names"),
+                                    results.getInt("s.length"),
+                                    results.getInt("s.playcount"),  
+                                    results.getString("album_names") ) );
+            }
+            //TODO: what are you doing with this data lil bro
+
+
+
+
+
+        } catch (SQLException e) {
+            System.out.println(e);
+            return null;
         }
-        String query = "SELECT ";
+
 
 
         return null;
@@ -189,10 +235,10 @@ public class DBFunction{
      * And also updates the listen count of the song
      * @param songID The ID of the song we are listening to 
      * @param user The user that is listening to the song
-     * @return The Number of rows changed
+     * @return Whether or not a row was changed, as a boolean
      * @author Antonio Bicknell <acb9430>
      */
-    public int listenToSong(int songID, User user){
+    public boolean listenToSong(int songID, User user){
         String query = "INSERT INTO listens_to (list_user_id, list_song_id, date_time_listened) VALUES (?,?,?)";
         String updateQuery = "UPDATE song SET playcount = playcount + 1 WHERE song_id = ?";
         try(PreparedStatement insertST = connection.prepareStatement(query);
@@ -210,11 +256,11 @@ public class DBFunction{
 
 
 
-        return rowsAffected;
+        return rowsAffected > 0;
         }
         catch(SQLException e){
             System.err.println(e);
-            return 0;
+            return false;
             }
         
 
