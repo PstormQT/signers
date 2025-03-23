@@ -11,8 +11,11 @@ import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Properties;
+import java.util.Scanner;
 
 import com.jcraft.jsch.*;
+
+
 
 /**
  * This is our class to access and interact with the Database. 
@@ -152,7 +155,7 @@ public class DBFunction{
             pdst.setString(6, fname);
             pdst.setString(7, lname);
             int rowsAffected = pdst.executeUpdate();
-            System.out.println(rowsAffected);
+            //System.out.println(rowsAffected);
             if(rowsAffected == 1){
                 try{
                     String query2 = "SELECT user_id,username,password FROM users WHERE username = ? AND password = ?";
@@ -277,18 +280,17 @@ public class DBFunction{
      * @return  a boolean if the collection was created successfully or not 
      * @author Katie Richardson
      */
-    public boolean deleteSongFromCollection(Integer song_id, Integer mc_id, Integer total_time, Integer number_of_songs){
+    public boolean deleteSongFromCollection(Integer song_id, Integer mc_id, Integer song_length){
         String query = "DELETE FROM collection_song WHERE song_id = ? AND mc_id = ?";
         try(PreparedStatement pdst = connection.prepareStatement(query);){
         pdst.setInt(1, song_id);
         pdst.setInt(2, mc_id);
         int rowsAffected = pdst.executeUpdate();
         if (rowsAffected == 1){
-            query = "UPDATE music_collection SET total_time = ?, number_of_songs = ? WHERE mc_id = ?";
+            query = "UPDATE music_collection SET total_time = total_time - ?, number_of_songs = number_of_songs - 1 WHERE mc_id = ?";
             PreparedStatement pdstII = connection.prepareStatement(query);
-            pdstII.setInt(1, total_time);
-            pdstII.setInt(2, number_of_songs);
-            pdstII.setInt(3, mc_id);
+            pdstII.setInt(1, song_length);
+            pdstII.setInt(2, mc_id);
             pdstII.executeUpdate();
             return true;
         }
@@ -311,18 +313,17 @@ public class DBFunction{
      * @return  a boolean if the collection was created successfully or not 
      * @author Katie Richardson
      */
-    public boolean addSongToCollection(Integer song_id, Integer mc_id, Integer total_time, Integer number_of_songs){
+    public boolean addSongToCollection(Integer song_id, Integer mc_id, Integer total_time){
         String query = "INSERT INTO collection_song (song_id, mc_id) VALUES (?,?)";
         try(PreparedStatement pdst = connection.prepareStatement(query);){
         pdst.setInt(1, song_id);
         pdst.setInt(2, mc_id);
         int rowsAffected = pdst.executeUpdate();
         if (rowsAffected == 1){
-            query = "UPDATE music_collection SET total_time = ?, number_of_songs = ? WHERE mc_id = ?";
+            query = "UPDATE music_collection SET total_time = ? WHERE mc_id = ?";
             PreparedStatement pdstII = connection.prepareStatement(query);
             pdstII.setInt(1, total_time);
-            pdstII.setInt(2, number_of_songs);
-            pdstII.setInt(3, mc_id);
+            pdstII.setInt(2, mc_id);
             pdstII.executeUpdate();
             return true;
         }
@@ -343,30 +344,23 @@ public class DBFunction{
      * @returns true if successful, false if error
      * @author Andrew Rosenhaus
      */
-    public boolean modifyCollectionName(MusicCollection collection, String updatedName) {
-        ResultSet results = null;
+    public boolean modifyCollectionName(Integer MCId, String updatedName) {
         String query = "UPDATE music_collection SET name = ? WHERE mc_id = ?";
         try(PreparedStatement pdst = connection.prepareStatement(query)) {
             pdst.setString(1, updatedName);
-            pdst.setInt(2, collection.getMCId());
-            results = pdst.executeQuery();
-            return true;
+            pdst.setInt(2, MCId);
+            if(pdst.executeUpdate() == 1){
+                return true;
+            }
+            else{
+                return false;
+            }
+            
         }
         catch (SQLException e) {
             System.out.println(e);
             return false;
         }
-        finally {
-                try{
-                    if (results != null){
-                        results.close();
-                    }
-                }
-                catch (SQLException c){
-                    System.out.println(c);
-                    return false;
-                }
-            }
     }
 
     /**
@@ -576,29 +570,254 @@ public class DBFunction{
     }
 
 
+     /**
+     * Follow a user
+     * @param user user who request a follow
+     * @param following user that got a follow
+     * @return if the execution is success, and there is no conflict
+     */
+    public boolean userFollowing(int user, int following){
+        ResultSet data = null;
+        PreparedStatement pdst = null;
+        PreparedStatement pdst2 = null;
+
+    try {
+        String query = "SELECT * FROM following WHERE user_id=? AND following_id=?";
+        pdst = this.connection.prepareStatement(query);
+        pdst.setInt(1, user);
+        pdst.setInt(2, following);
+        data = pdst.executeQuery();
+
+        if (data.next()) {
+            return false;
+        }
+
+        String query2 = "INSERT INTO following (user_id, following_id) VALUES(?, ?)";
+        pdst2 = this.connection.prepareStatement(query2);
+        pdst2.setInt(1, user);
+        pdst2.setInt(2, following);
+
+        int rowsAffected = pdst2.executeUpdate();
+        return rowsAffected > 0;
+
+    } catch (Exception e) {
+            System.out.println(e);
+            return false;
+        }
+    }
+
+
+
+    /**
+     * UnFollow a user (ddel;ete the relation in the DB)
+     * @param user user who request an Unfollow
+     * @param following user that got an unfollow
+     * @return if the execution is success, and there is no conflict
+     */
+    public boolean userUnFollowing(int user, int following){
+        ResultSet data = null;
+        PreparedStatement pdst = null;
+        PreparedStatement pdst2 = null;
+
+    try {
+        String query = "SELECT * FROM following WHERE user_id=? AND following_id=?";
+        pdst = this.connection.prepareStatement(query);
+        pdst.setInt(1, user);
+        pdst.setInt(2, following);
+        data = pdst.executeQuery();
+
+        if (!data.next()) {
+            return false;
+        }
+
+        String query2 = "DELETE FROM following WHERE user_id=? AND following_id=?";
+        pdst2 = this.connection.prepareStatement(query2);
+        pdst2.setInt(1, user);
+        pdst2.setInt(2, following);
+
+        int rowsAffected = pdst2.executeUpdate();
+        //System.out.println(rowsAffected);
+        return rowsAffected > 0;
+
+    } catch (Exception e) {
+            System.out.println(e);
+            return false;
+        }
+    }
+
+
     
     public static void main(String[] args) {
         DBFunction test = new DBFunction();
-        User testUser = test.login("MasterFaster", "RDA");
-        System.out.println(testUser);
-        
-        
-        // The following lines fail because date_time_listened is not part of the key of Listens_to
-        //System.out.println("testing listening:" );
-        //System.out.println(test.listenToSong(42, testUser));
-        //System.out.println("Testing Collection Listening: Expecting 2");
-        //System.out.println(test.listenToCollection(7093, testUser));
-
-        System.out.println("Testing Listening");
-        ArrayList<Song> songs = test.searchSongs("bob", DEFAULT_SORT, true);
-        for(Song s : songs){
-            System.out.println(s);
+        Scanner scanner = new Scanner(System.in);
+        User currentUser = null;
+        boolean sentinal = true;
+        String input;
+        System.out.println("Welcome to the Music Database!");
+        boolean loggingIn = true;
+        while (loggingIn){
+            System.out.println("Would you like to login or create a new user?");
+            input = scanner.nextLine();
+            if(input.equals("login")){
+                System.out.println("enter username:");
+                String username = scanner.nextLine();
+                System.out.println("enter password:");
+                String password = scanner.nextLine();
+                currentUser = test.login(username, password);
+                if (currentUser != null){
+                    System.out.println("Welcome, " + currentUser.getUsername());
+                    loggingIn = false;
+                }
+                else{
+                    System.out.println("User not found");
+                }
+            }
+            if(input.equals("new user")){
+                System.out.println("enter username:");
+                String username = scanner.nextLine();
+                System.out.println("enter password:");
+                String password = scanner.nextLine();
+                System.out.println("enter email:");
+                String email = scanner.nextLine();
+                System.out.println("enter first name:");
+                String first = scanner.nextLine();
+                System.out.println("enter last name:");
+                String last = scanner.nextLine();
+                currentUser = test.createUser(username, password, first, last, email);
+                if(currentUser != null){
+                    System.out.println("Welcome, " + currentUser.getUsername());
+                    loggingIn = false;
+                }
+                else{
+                    System.out.println("User creation failed");
+                }
+            }
         }
 
 
+        while(sentinal){
+            System.out.println("Collection    Song     User    Quit");
+            input = scanner.nextLine();
+            input.toLowerCase();
+            if (input.equals("quit")){
+                sentinal = false;
+                scanner.close();
+                test.closeConnection();
+            }
+            if (input.equals("collection")){
+                System.out.println("Create    Add Song   Delete Song    Change Name    Delete Collection    Search Collections    Listen");
+                String input2 = scanner.nextLine();
+                input2 = input2.toLowerCase();
+                if(input2.equals("create")){
+                    System.out.println("Input the desired name.");
+                    String name = scanner.nextLine();
+                    test.createCollection(name, 0, 0, currentUser.getId());
+                }
+                if(input2.equals("add song")){
+                    System.out.println("Input the ID of the song you want to add.");
+                    Integer songId = scanner.nextInt();
+                    System.out.println("Input the ID of the collection you want to modify.");
+                    Integer MCID = scanner.nextInt();
+                    System.out.println("Input the length of the song you want to add.");
+                    Integer songLength = scanner.nextInt();
+                    test.addSongToCollection(songId, MCID, songLength);
+                }
+                if(input2.equals("delete song")){
+                    System.out.println("Input the ID of the song you want to delete.");
+                    Integer songId = scanner.nextInt();
+                    scanner.nextLine();
+                    System.out.println("Input the ID of the collection you want to modify.");
+                    Integer MCID = scanner.nextInt();
+                    scanner.nextLine();
+                    System.out.println("Input the length of the song you want to delete.");
+                    Integer songLength = scanner.nextInt();
+                    scanner.nextLine();
+                    test.deleteSongFromCollection(songId, MCID, songLength);
+                }
+                if(input2.equals("change name")){
+                    System.out.println("Input the ID of the collection you want to change the name of.");
+                    Integer mc_id = scanner.nextInt();
+                    scanner.nextLine();
+                    System.out.println("Input the desired name.");
+                    String name = scanner.nextLine().toLowerCase();
+                    test.modifyCollectionName(mc_id, name);
+                }
+                if(input2.equals("delete")){
+                    System.out.println("Input the ID of the collection you want to delete.");
+                    Integer mc_id = scanner.nextInt();
+                    scanner.nextLine();
+                    test.deleteCollection(mc_id);
+                }
+                if(input2.equals("search")){
+                    System.out.println("Input the desired name to search.");
+                    String name = scanner.nextLine().toLowerCase();
+                    test.collectionSearch(name, currentUser.getId());
 
+                }
+                if(input2.equals("listen")){
+                    System.out.println("Input the ID of the collection to listen to");
+                    int id = scanner.nextInt();
+                    scanner.nextLine();
+                    test.listenToCollection(id, currentUser);
+                }
+            }
+            if (input.equals("song")){
+                System.out.println("listen      search");
+                String songInput = scanner.nextLine();
+                if (songInput.equals("listen")){
+                    System.out.println("Please enter song ID");
+                    int id = scanner.nextInt();
+                    scanner.nextLine();
+                    test.listenToSong(id, currentUser);
+                    System.out.print("listened!");
+                }
+                if (songInput.equals("search")){
+                    System.out.println("Please enter search term");
+                    songInput = scanner.nextLine();
+                    System.out.println("Sort by: default, title, artist_names, genre_names, or release_date?");
+                    String sortBy = scanner.nextLine();
+                    if (sortBy.equals("default")) {
+                        sortBy = DEFAULT_SORT;
+                    }
+                    System.out.println("ascending or descending?");
+                    String asc = scanner.nextLine();
+                    if(asc.equals("ascending")){
+                        ArrayList<Song> results = test.searchSongs(songInput, sortBy, true);
+                        for (Song i : results){
+                            System.out.println(i);
+                        }
+                    }
+                    if(asc.equals("descending")){
+                        ArrayList<Song> results = test.searchSongs(songInput, sortBy, false);
+                        for (Song i : results){
+                            System.out.println(i);
+                        }
+                    }
+                    
+                }
 
+            }
+            if (input.equals("user")){
+                System.out.println("Follow      Unfollow");
+                String userInput = scanner.nextLine();
+                if (userInput.equals("follow")) {
+                    System.out.println("ID of user to follow");
+                    int id = scanner.nextInt();
+                    scanner.nextLine();
+                    if(test.userFollowing(currentUser.getId(), id)){
+                        System.out.println("Successfully Followed");
+                    }
+                }
+                if(userInput.equals("unfollow")){
+                    System.out.println("ID of user to unfollow");
+                    int id = scanner.nextInt();
+                    scanner.nextLine();
+                    if(test.userUnFollowing(currentUser.getId(), id)){
+                        System.out.println("Successfully unfollowed");
+                    }
+                }
 
-        System.out.println(test.closeConnection());
+            }
+        }
     }
 }
