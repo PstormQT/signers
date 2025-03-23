@@ -288,8 +288,8 @@ public class DBFunction{
 
     public static void main(String[] args) {
         DBFunction test = new DBFunction();
-        // User testUser = test.login("MasterFaster", "RDA");
-        // System.out.println(testUser);
+        User testUser = test.login("MasterFaster", "RDA");
+        System.out.println(testUser);
 
         ArrayList<User> a = test.lookUpByEmail("ahowood1e@dagondesign.co");
 
