@@ -3,22 +3,25 @@ from sshtunnel import SSHTunnelForwarder
 from pwd import *
 
 
-def main():
-    #AAAAAAAAAAAAa
+def main(conn):
+    a = "SELECT * FROM ALBUM where album_id = 1"
+    conn.execute(a)
+    why = conn.fetchone()
+    print(why)
 
 
 
 try:
     with SSHTunnelForwarder(('starbug.cs.rit.edu', 22),
-                            ssh_username=pwd.username,
-                            ssh_password=pwd.password,
+                            ssh_username=username,
+                            ssh_password=password,
                             remote_bind_address=('127.0.0.1', 5432)) as server:
         server.start()
         print("SSH tunnel established")
         params = {
-            'dbname': pwd.dbName,
-            'user': pwd.username,
-            'password': pwd.password,
+            'dbname': dbName,
+            'user': username,
+            'password': password,
             'host': 'localhost',
             'port': server.local_bind_port
         }
@@ -28,7 +31,7 @@ try:
         curs = conn.cursor()
         print("Database connection established")
 
-        main():
+        main(conn)
 
         conn.close()
 except:
