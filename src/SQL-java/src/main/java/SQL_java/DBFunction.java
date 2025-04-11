@@ -1,7 +1,6 @@
 package SQL_java;
 
 import java.sql.Connection;
-import java.sql.Date;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -645,8 +644,117 @@ public class DBFunction{
         }
     }
 
+        /**
+     * Pulls up the User Profile
+     * @param user the user ID put in to pull up the profile
+     */
 
+     public void checkUserProfile(int user){
+        PreparedStatement query = null;
+        ResultSet rs = null;
+        try{
+            String getName = "SELECT username FROM users WHERE user_id = ?";
+            query = this.connection.prepareStatement(getName);
+            query.setInt(1, user);
+            rs = query.executeQuery();
+            rs.next();
+            System.out.println("User: " + rs.getString(1));
+            checkUserTopArtists(user);
+            checkFollowerCount(user);
+            checkFollowingCount(user);
+            checkCollectionCount(user);
+        }
+        catch(SQLException e){
+            System.out.println(e);
+        }      
+    }
     
+    /**
+     * Pulls up the User's top songs
+     * @param user the user ID put in to pull up the profile
+     */
+    public void checkUserTopArtists(int user){
+        PreparedStatement query = null;
+        ResultSet rs = null;
+        try{
+            String getSongIDs = "SELECT title FROM song INNER JOIN (SELECT list_song_id FROM listens_to where list_user_id = ? GROUP BY list_song_id ORDER BY COUNT(*) DESC LIMIT 10) AS top_ten ON song.song_id = top_ten.list_song_id";
+            query = this.connection.prepareStatement(getSongIDs);
+            query.setInt(1,user);
+            rs = query.executeQuery();
+            System.out.println("Top 10 Songs:");
+            int interval = 1;
+            while(rs.next()){
+                System.out.println(interval + ": " + rs.getString(1));
+                interval++;
+            }
+        }
+        catch(SQLException e){
+            System.out.println(e);
+        }
+    }
+    /**
+     * Prints the number of followers a user has
+     * @param user
+     */
+    public void checkFollowerCount(int user){
+        PreparedStatement query = null;
+        ResultSet rs = null;
+        try{
+            String getFollowerCount = "SELECT COUNT(*) FROM following WHERE following_id = ?";
+            query = this.connection.prepareStatement(getFollowerCount);
+            query.setInt(1,user);
+            rs = query.executeQuery();
+            while(rs.next()){
+                System.out.println("Followers: " + rs.getString(1));
+            }
+        }
+        catch(SQLException e){
+            System.out.println(e);
+        }
+    }
+
+    /**
+     * Prints the number of users a user is following
+     * @param user
+     */
+    public void checkFollowingCount(int user){
+        PreparedStatement query = null;
+        ResultSet rs = null;
+        try{
+            String getFollowerCount = "SELECT COUNT(*) FROM following WHERE user_id = ?";
+            query = this.connection.prepareStatement(getFollowerCount);
+            query.setInt(1,user);
+            rs = query.executeQuery();
+            while(rs.next()){
+                System.out.println("Following: " + rs.getString(1));
+            }
+        }
+        catch(SQLException e){
+            System.out.println(e);
+        }
+    }
+    /**
+     * Checks the number of collections a user has
+     * @param user
+     */
+    public void checkCollectionCount(int user){
+        PreparedStatement query = null;
+        ResultSet rs = null;
+        try{
+            String getFollowerCount = "SELECT COUNT(*) FROM music_collection WHERE user_id = ?";
+            query = this.connection.prepareStatement(getFollowerCount);
+            query.setInt(1,user);
+            rs = query.executeQuery();
+            while(rs.next()){
+                System.out.println("Collections: " + rs.getString(1));
+            }
+        }
+        catch(SQLException e){
+            System.out.println(e);
+        }
+    }
+
+
     public static void main(String[] args) {
         DBFunction test = new DBFunction();
         Scanner scanner = new Scanner(System.in);
@@ -769,7 +877,7 @@ public class DBFunction{
                     int id = scanner.nextInt();
                     scanner.nextLine();
                     test.listenToSong(id, currentUser);
-                    System.out.print("listened!");
+                    System.out.println("listened!");
                 }
                 if (songInput.equals("search")){
                     System.out.println("Please enter search term");
@@ -798,14 +906,14 @@ public class DBFunction{
 
             }
             if (input.equals("user")){
-                System.out.println("Follow      Unfollow");
+                System.out.println("Follow      Unfollow      View");
                 String userInput = scanner.nextLine();
                 if (userInput.equals("follow")) {
                     System.out.println("ID of user to follow");
                     int id = scanner.nextInt();
                     scanner.nextLine();
                     if(test.userFollowing(currentUser.getId(), id)){
-                        System.out.println("Successfully Followed");
+                        System.out.println("Successfully Followed!");
                     }
                 }
                 if(userInput.equals("unfollow")){
@@ -813,10 +921,14 @@ public class DBFunction{
                     int id = scanner.nextInt();
                     scanner.nextLine();
                     if(test.userUnFollowing(currentUser.getId(), id)){
-                        System.out.println("Successfully unfollowed");
+                        System.out.println("Successfully unfollowed!");
                     }
                 }
-
+                if(userInput.equals("view")){
+                    System.out.println("ID of user to view");
+                    int id = scanner.nextInt();
+                    test.checkUserProfile(id);
+                }
             }
         }
     }
