@@ -570,6 +570,41 @@ public class DBFunction{
     }
 
 
+    public boolean topSongFollowByUser(int userid){
+        try{
+            String query = "SELECT song.title,\r\n" + //
+                        "        listenbyfollower\r\n" + //
+                        "FROM (SELECT listens_to.list_user_id AS userid,\r\n" + //
+                        "               listens_to.list_song_id AS songid,\r\n" + //
+                        "                COUNT(list_user_id) as listenbyfollower\r\n" + //
+                        "        from (SELECT following.following_id\r\n" + //
+                        "                FROM following\r\n" + //
+                        "                WHERE following.user_id = ?) AS followertable\r\n" + //
+                        "        LEFT JOIN listens_to on following_id = list_user_id\r\n" + //
+                        "        GROUP BY list_song_id, list_user_id) AS followusertopsong\r\n" + //
+                        "LEFT JOIN song on followusertopsong.songid = song.song_id\r\n" + //
+                        "ORDER BY listenbyfollower DESC\r\n" + //
+                        "LIMIT 50";
+        PreparedStatement statement = this.connection.prepareStatement(query);
+        statement.setInt(1, userid);
+        
+        ResultSet data = statement.executeQuery();
+
+        System.out.println("title      listen by follower");
+            
+            while(data.next()){
+                String songName = data.getString("title");
+                Integer followerListenCount = data.getInt("listenbyfollower");
+                System.out.println(songName + "          " + followerListenCount);
+            }
+        
+        return true;
+        } catch (Exception e){
+            System.out.println(e);
+            return false;
+        }
+    }
+
      /**
      * Follow a user
      * @param user user who request a follow
