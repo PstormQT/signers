@@ -645,6 +645,29 @@ public class DBFunction{
         }
     }
 
+    public ResultSet top10month(){
+        PreparedStatement pdst1 = null;
+        String query = "SELECT title, listCount.listenCount FROM song LEFT JOIN " +
+        "(SELECT list_song_id, COUNT(list_song_id) AS listenCount " +
+        "FROM listens_to " +
+        "WHERE date_time_listened >= (NOW() - INTERVAL '30 days') " +
+        "GROUP BY list_song_id " +
+        "ORDER BY COUNT(list_song_id) desc) listCount " +
+        "ON song.song_id = listCount.list_song_id " +
+        "WHERE listCount.listenCount IS NOT NULL " +
+        "ORDER BY listCount.listenCount desc " +
+        "LIMIT 50";
+        try{
+            pdst1 = this.connection.prepareStatement(query);
+            return pdst1.executeQuery();
+        }
+        catch(Exception e){
+            System.out.println(e);
+            return null;
+        }
+
+    }
+
 
     
     public static void main(String[] args) {
