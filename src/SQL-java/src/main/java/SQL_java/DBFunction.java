@@ -644,12 +644,13 @@ public class DBFunction{
         }
     }
 
-        /**
+    /**
      * Pulls up the User Profile
-     * @param user the user ID put in to pull up the profile
+     * @param user the ID of the user being checked
+     * Author: Andrew Rosenhaus
      */
 
-     public void checkUserProfile(int user){
+    public void checkUserProfile(int user){
         PreparedStatement query = null;
         ResultSet rs = null;
         try{
@@ -670,15 +671,16 @@ public class DBFunction{
     }
     
     /**
-     * Pulls up the User's top songs
-     * @param user the user ID put in to pull up the profile
+     * Pulls up the User's top artists
+     * @param user the ID of the user being checked
+     * Author: Andrew Rosenhaus
      */
     public void checkUserTopArtists(int user){
         PreparedStatement query = null;
         ResultSet rs = null;
         try{
-            String getSongIDs = "SELECT title FROM song INNER JOIN (SELECT list_song_id FROM listens_to where list_user_id = ? GROUP BY list_song_id ORDER BY COUNT(*) DESC LIMIT 10) AS top_ten ON song.song_id = top_ten.list_song_id";
-            query = this.connection.prepareStatement(getSongIDs);
+            String getSongs = "SELECT name FROM artist INNER JOIN (SELECT c_artist_id FROM created INNER JOIN (SELECT list_song_id FROM listens_to WHERE list_user_id = ?) AS songs ON created.c_songid = songs.list_song_id GROUP BY c_artist_id ORDER BY COUNT(*) DESC LIMIT 10) AS top_artists ON artist.artist_id = top_artists.c_artist_id";
+            query = this.connection.prepareStatement(getSongs);
             query.setInt(1,user);
             rs = query.executeQuery();
             System.out.println("Top 10 Songs:");
@@ -694,7 +696,8 @@ public class DBFunction{
     }
     /**
      * Prints the number of followers a user has
-     * @param user
+     * @param user the ID of the user being checked
+     * Author: Andrew Rosenhaus
      */
     public void checkFollowerCount(int user){
         PreparedStatement query = null;
@@ -715,7 +718,8 @@ public class DBFunction{
 
     /**
      * Prints the number of users a user is following
-     * @param user
+     * @param user the ID of the user being checked
+     * Author: Andrew Rosenhaus
      */
     public void checkFollowingCount(int user){
         PreparedStatement query = null;
@@ -735,7 +739,8 @@ public class DBFunction{
     }
     /**
      * Checks the number of collections a user has
-     * @param user
+     * @param user the ID of the user being checked
+     * Author: Andrew Rosenhaus
      */
     public void checkCollectionCount(int user){
         PreparedStatement query = null;
