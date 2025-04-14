@@ -174,7 +174,7 @@ public class DBFunction{
             //System.out.println(rowsAffected);
             if(rowsAffected == 1){
                 try{
-                    String query2 = "SELECT user_id,username,password FROM users WHERE username = ? AND password = sha256(convert_to(CONCAT(?, sha256(convert_to(?, 'LATIN1')))),'LATIN1')";
+                    String query2 = "SELECT user_id,username,password FROM users WHERE username = ? AND password = cast(sha256(convert_to(CONCAT(?, sha256(convert_to(?, 'LATIN1') ) ),'LATIN1')) as varchar(256) )";
                     PreparedStatement pdstII = connection.prepareStatement(query2);
                     pdstII.setString(1, username);
                     pdstII.setString(2, password);
