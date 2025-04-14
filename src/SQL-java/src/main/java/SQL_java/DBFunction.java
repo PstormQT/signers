@@ -109,15 +109,17 @@ public class DBFunction{
 
             //TODO: Salting: password + sha256(username) for salted password (hash this string combination)
 
-        String query = "SELECT * FROM users WHERE username=? AND password=sha256( convert_to( CONCAT( ?, sha256( convert_to(?, 'LATIN1') ) ) ), 'LATIN1')";
+        String query = "SELECT * FROM users WHERE username=? AND password = cast(sha256(convert_to(CONCAT(?, sha256(convert_to(?, 'LATIN1') ) ),'LATIN1')) as varchar(256) )";
+        //password = cast(sha256(convert_to((CONCAT(?, sha256(convert_to(?, 'LATIN1')))),'LATIN1')) as varchar(256))";
+        
         statement = connection.prepareStatement(query);
         statement.setString(1, username);
         statement.setString(2, password);
         statement.setString(3, username);
-
+        
         results = statement.executeQuery();
         if (results.next()){
-            query = "UPDATE users SET last_login_date = ? WHERE username = ? AND password = sha256(convert_to(CONCAT(?,sha256(convert_to(?, 'LATIN1')))), 'LATIN1')";
+            query = "UPDATE users SET last_login_date = ? WHERE username = ? AND password =cast(sha256(convert_to(CONCAT(?, sha256(convert_to(?, 'LATIN1') ) ),'LATIN1')) as varchar(256) )";
             PreparedStatement pdst = connection.prepareStatement(query);
             pdst.setDate(1, currentDate);
             pdst.setString(2, username);
