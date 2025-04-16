@@ -399,7 +399,7 @@ public class DBFunction{
 
     /**
      * Gives recomendations to the user for what song to listen to based on their most listened to genre.
-     * @return 
+     * @return true or false depending on if user listening data was found or not
      * @author Katie Richardson
      */
     public boolean getRecommendations(int list_user_id){
@@ -414,13 +414,14 @@ public class DBFunction{
             "WHERE listens_to.list_user_id = ? " +
             "GROUP BY genre.genre_name " +
             "ORDER BY totalListenCount DESC LIMIT 1";
-        // Recommend top 5 songs of that genre
-        String query2 = "SELECT song_id, COUNT(listens_to.list_user_id) AS totalListenCount " +
+        // Recommend top 10 songs of that genre
+        String query2 = "SELECT song.song_id, song.title, COUNT(listens_to.list_user_id) AS total_listens " +
             "FROM song JOIN song_genre ON song.song_id = song_genre.song_id " +
             "LEFT JOIN listens_to ON song.song_id = listens_to.list_song_id " +
-            "WHERE song_genre.genre_id = ? " +
+            "JOIN genre on song_genre.genre_id = genre.genre_id " +
+            "WHERE genre.genre_name = ? " +
             "GROUP BY song.song_id, song.title " +
-            "ORDER BY total_listens DESC LIMIT 5";
+            "ORDER BY total_listens DESC LIMIT 10";
         try(PreparedStatement pdst = connection.prepareStatement(query1);){
             pdst.setInt(1,list_user_id);
             results = pdst.executeQuery();
