@@ -40,8 +40,8 @@ public class DBFunction{
         int lport = 5432;
         String rhost = "starbug.cs.rit.edu";
         int rport = 5432;
-        String user = abc.USERNAME; //change to your username
-        String password = abc.PASSWORD; //change to your password
+        String user = "abc"; //change to your username
+        String password = "abc"; //change to your password
         String databaseName = DBNAME; //change to your database name
 
         String driverName = "org.postgresql.Driver";
@@ -397,6 +397,52 @@ public class DBFunction{
             }
     }
 
+    /**
+     * Gives recomendations to the user for what song to listen to based on their most listened to genre.
+     * @return 
+     * @author Katie Richardson
+     */
+    public boolean getRecommendations(int list_user_id){
+        ResultSet results = null;
+        // Top listened to genre from user
+        String query1 = "SELECT genre.genre_name AS genrename," +
+            "COUNT(*) AS totalListenCount" +
+            "FROM song" +
+            "JOIN song_genre ON song.song_id = song_genre.song_id" +
+            "JOIN genre ON song_genre.genre_id = genre.genre_id" +
+            "JOIN listens_to ON song.song_id = listens_to.list_song_id" +
+            "WHERE listens_to.list_user_id = ?" +
+            "GROUP BY genre.genre_name" +
+            "ORDER BY totalListenCount DESC LIMIT 1";
+        // Recommend top 5 songs of that genre
+        String query2 = "SELECT song_id, COUNT(listens_to.list_user_id) AS totalListenCount" +
+            "FROM song JOIN song_genre ON song.song_id = song_genre.song_id" +
+            "LEFT JOIN listens_to ON song.song_id = listens_to.list_song_id" +
+            "WHERE song_genre.genre_id = ?" +
+            "GROUP BY song.song_id, song.title" +
+            "ORDER BY total_listens DESC LIMIT 5";
+        try(PreparedStatement pdst = connection.prepareStatement(query1);){
+            pdst.setInt(1,list_user_id);
+            results = pdst.executeQuery();
+            String genre = results.getString(1);
+            PreparedStatement pdstII = connection.prepareStatement(query2);
+            pdstII.setString(1, genre);
+            results = pdstII.executeQuery();
+            ArrayList<String> songs = new ArrayList<>();
+            while(results.next()) {
+                songs.add(results.getString("title"));
+            }
+            for(int i = 0; i < songs.size(); i++){
+                System.out.println(i + ": " + songs.get(i));
+            }
+            return true;
+        }
+        catch (SQLException e) {
+            System.out.println(e);
+            return false;
+        }
+    }
+
 
     /**
      * Closes the connection with the DB server. 
@@ -696,7 +742,7 @@ public class DBFunction{
 
 
         while(sentinal){
-            System.out.println("Collection    Song     User    Quit");
+            System.out.println("Collection    Song     User    Recommendations     Quit");
             input = scanner.nextLine();
             input.toLowerCase();
             if (input.equals("quit")){
@@ -817,6 +863,19 @@ public class DBFunction{
                     }
                 }
 
+            }
+            if (input.equals("recommendations")){
+                System.out.println("Self      Other");
+                String userInput = scanner.nextLine();
+                if(userInput.equals("self")){
+                    test.getRecommendations(currentUser.getId());
+                }
+                if(userInput.equals("other")){
+                    System.out.println("ID of user to see recommendations:");
+                    int id = scanner.nextInt();
+                    scanner.nextLine();
+                    test.getRecommendations(id);
+                }
             }
         }
     }
