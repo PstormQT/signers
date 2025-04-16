@@ -405,37 +405,43 @@ public class DBFunction{
     public boolean getRecommendations(int list_user_id){
         ResultSet results = null;
         // Top listened to genre from user
-        String query1 = "SELECT genre.genre_name AS genrename," +
-            "COUNT(*) AS totalListenCount" +
-            "FROM song" +
-            "JOIN song_genre ON song.song_id = song_genre.song_id" +
-            "JOIN genre ON song_genre.genre_id = genre.genre_id" +
-            "JOIN listens_to ON song.song_id = listens_to.list_song_id" +
-            "WHERE listens_to.list_user_id = ?" +
-            "GROUP BY genre.genre_name" +
+        String query1 = "SELECT genre.genre_name AS genrename, " +
+            "COUNT(*) AS totalListenCount " +
+            "FROM song " +
+            "JOIN song_genre ON song.song_id = song_genre.song_id " +
+            "JOIN genre ON song_genre.genre_id = genre.genre_id " +
+            "JOIN listens_to ON song.song_id = listens_to.list_song_id " +
+            "WHERE listens_to.list_user_id = ? " +
+            "GROUP BY genre.genre_name " +
             "ORDER BY totalListenCount DESC LIMIT 1";
         // Recommend top 5 songs of that genre
-        String query2 = "SELECT song_id, COUNT(listens_to.list_user_id) AS totalListenCount" +
-            "FROM song JOIN song_genre ON song.song_id = song_genre.song_id" +
-            "LEFT JOIN listens_to ON song.song_id = listens_to.list_song_id" +
-            "WHERE song_genre.genre_id = ?" +
-            "GROUP BY song.song_id, song.title" +
+        String query2 = "SELECT song_id, COUNT(listens_to.list_user_id) AS totalListenCount " +
+            "FROM song JOIN song_genre ON song.song_id = song_genre.song_id " +
+            "LEFT JOIN listens_to ON song.song_id = listens_to.list_song_id " +
+            "WHERE song_genre.genre_id = ? " +
+            "GROUP BY song.song_id, song.title " +
             "ORDER BY total_listens DESC LIMIT 5";
         try(PreparedStatement pdst = connection.prepareStatement(query1);){
             pdst.setInt(1,list_user_id);
             results = pdst.executeQuery();
-            String genre = results.getString(1);
-            PreparedStatement pdstII = connection.prepareStatement(query2);
-            pdstII.setString(1, genre);
-            results = pdstII.executeQuery();
-            ArrayList<String> songs = new ArrayList<>();
-            while(results.next()) {
-                songs.add(results.getString("title"));
+            if(results.next()) {
+                String genre = results.getString("genrename");
+                PreparedStatement pdstII = connection.prepareStatement(query2);
+                pdstII.setString(1, genre);
+                results = pdstII.executeQuery();
+                ArrayList<String> songs = new ArrayList<>();
+                while(results.next()) {
+                    songs.add(results.getString("title"));
+                }
+                for(int i = 0; i < songs.size(); i++){
+                    System.out.println(i + ": " + songs.get(i));
+                }
+                return true;
             }
-            for(int i = 0; i < songs.size(); i++){
-                System.out.println(i + ": " + songs.get(i));
+            else {
+                System.out.println("User has no listening history");
             }
-            return true;
+            return false;
         }
         catch (SQLException e) {
             System.out.println(e);
