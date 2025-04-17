@@ -102,18 +102,29 @@ public class DBFunction{
      * @author Brandon Yi
      */
     public User login(String username, String password){
-        Statement statement;
+        PreparedStatement statement;
         ResultSet results;
         try{
-        String query = "SELECT * FROM users WHERE username='"+username+"' AND password='"+password+"'";
-        statement = this.connection.createStatement();
-        results = statement.executeQuery(query);
+
+            //TODO: Salting: password + sha256(username) for salted password (hash this string combination)
+
+        String query = "SELECT * FROM users WHERE username=? AND password = cast(sha256(convert_to(CONCAT(?, sha256(convert_to(?, 'LATIN1') ) ),'LATIN1')) as varchar(256) )";
+        //password = cast(sha256(convert_to((CONCAT(?, sha256(convert_to(?, 'LATIN1')))),'LATIN1')) as varchar(256))";
+        
+        statement = connection.prepareStatement(query);
+        statement.setString(1, username);
+        statement.setString(2, password);
+        statement.setString(3, username);
+        
+        results = statement.executeQuery();
         if (results.next()){
-            query = "UPDATE users SET last_login_date = ? WHERE username = ? AND password = ?";
+            query = "UPDATE users SET last_login_date = ? WHERE username = ? AND password =cast(sha256(convert_to(CONCAT(?, sha256(convert_to(?, 'LATIN1') ) ),'LATIN1')) as varchar(256) )";
             PreparedStatement pdst = connection.prepareStatement(query);
             pdst.setDate(1, currentDate);
             pdst.setString(2, username);
             pdst.setString(3, password);
+            pdst.setString(4, username);
+
             pdst.executeUpdate();
             return new User(results.getInt("user_id"), results.getString("username"),
                                    results.getString("password"));
@@ -122,7 +133,7 @@ public class DBFunction{
             return null;
         }
         }
-        catch (SQLException e) {
+        catch (SQLException e) {    
             System.out.println(e);
             return null;
         }
@@ -144,23 +155,29 @@ public class DBFunction{
     public User createUser(String username, String password, String fname, String lname, String email){
         ResultSet results;
         try{
-            String query = "INSERT INTO users (password,creation_date,last_login_date,email,username,fname,lname) VALUES (?,?,?,?,?,?,?)";
+            //TODO: create salt: done password + shausername
+            //perchance first half of username, password, second half of username?
+            String query = "INSERT INTO users (password,creation_date,last_login_date,email,username,fname,lname) VALUES(cast(sha256(convert_to((CONCAT(?, sha256(convert_to(?, 'LATIN1')))),'LATIN1')) as varchar(256)),?,?,?,?,?,?)";
+
             PreparedStatement pdst = connection.prepareStatement(query);
+
             pdst.setString(1, password);
-            pdst.setDate(2, currentDate);
+            pdst.setString(2, username);
             pdst.setDate(3, currentDate);
-            pdst.setString(4, email);
-            pdst.setString(5, username);
-            pdst.setString(6, fname);
-            pdst.setString(7, lname);
+            pdst.setDate(4, currentDate);
+            pdst.setString(5, email);
+            pdst.setString(6, username);
+            pdst.setString(7, fname);
+            pdst.setString(8, lname);
             int rowsAffected = pdst.executeUpdate();
             //System.out.println(rowsAffected);
             if(rowsAffected == 1){
                 try{
-                    String query2 = "SELECT user_id,username,password FROM users WHERE username = ? AND password = ?";
+                    String query2 = "SELECT user_id,username,password FROM users WHERE username = ? AND password = cast(sha256(convert_to(CONCAT(?, sha256(convert_to(?, 'LATIN1') ) ),'LATIN1')) as varchar(256) )";
                     PreparedStatement pdstII = connection.prepareStatement(query2);
                     pdstII.setString(1, username);
                     pdstII.setString(2, password);
+                    pdstII.setString(3, username);
                     results = pdstII.executeQuery();
                     if (results.next()){
                         return new User(results.getInt("user_id"), results.getString("username"),
@@ -644,12 +661,42 @@ public class DBFunction{
         }
     }
 
+
+    public ArrayList<String> top10month(){
+        ResultSet result = null;
+        PreparedStatement pdst1 = null;
+        ArrayList<String> output = new ArrayList<>();
+        String query = "SELECT title, listCount.listenCount FROM song LEFT JOIN " +
+        "(SELECT list_song_id, COUNT(list_song_id) AS listenCount " +
+        "FROM listens_to " +
+        "WHERE date_time_listened >= (NOW() - INTERVAL '30 days') " +
+        "GROUP BY list_song_id " +
+        "ORDER BY COUNT(list_song_id) desc) listCount " +
+        "ON song.song_id = listCount.list_song_id " +
+        "WHERE listCount.listenCount IS NOT NULL " +
+        "ORDER BY listCount.listenCount desc " +
+        "LIMIT 50";
+        try{
+            pdst1 = this.connection.prepareStatement(query);
+            result = pdst1.executeQuery();
+            while(result.next()){
+                output.add(result.getString(1));
+            }
+            return output;
+        }
+        catch(Exception e){
+            System.out.println(e);
+            return null;
+        }
+
+    }
+
+
     /**
      * Pulls up the User Profile
      * @param user the ID of the user being checked
      * Author: Andrew Rosenhaus
      */
-
     public void checkUserProfile(int user){
         PreparedStatement query = null;
         ResultSet rs = null;
@@ -763,6 +810,10 @@ public class DBFunction{
     public static void main(String[] args) {
         DBFunction test = new DBFunction();
         Scanner scanner = new Scanner(System.in);
+        ArrayList<String> top = test.top10month();
+        for(String title : top){
+            System.out.println(title);
+        }
         User currentUser = null;
         boolean sentinal = true;
         String input;
