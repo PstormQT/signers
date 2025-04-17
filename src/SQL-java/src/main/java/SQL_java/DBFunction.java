@@ -40,9 +40,9 @@ public class DBFunction{
         int lport = 5432;
         String rhost = "starbug.cs.rit.edu";
         int rport = 5432;
-        String user = "abc"; //change to your username
-        String password = "abc"; //change to your password
-        String databaseName = DBNAME; //change to your database name
+        String user = abc.USERNAME; 
+        String password = abc.PASSWORD; 
+        String databaseName = DBNAME; 
 
         String driverName = "org.postgresql.Driver";
         
@@ -434,8 +434,8 @@ public class DBFunction{
                 while(results.next()) {
                     songs.add(results.getString("title"));
                 }
-                for(int i = 0; i < songs.size(); i++){
-                    System.out.println(i + ": " + songs.get(i));
+                for(int i = 1; i <= songs.size(); i++){
+                    System.out.println(i + ": " + songs.get(i-1));
                 }
                 return true;
             }
