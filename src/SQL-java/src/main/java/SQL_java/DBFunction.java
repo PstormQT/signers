@@ -39,9 +39,9 @@ public class DBFunction{
         int lport = 5432;
         String rhost = "starbug.cs.rit.edu";
         int rport = 5432;
-        String user = abc.USERNAME; //change to your username
-        String password = abc.PASSWORD; //change to your password
-        String databaseName = DBNAME; //change to your database name
+        String user = abc.USERNAME; 
+        String password = abc.PASSWORD; 
+        String databaseName = DBNAME; 
 
         String driverName = "org.postgresql.Driver";
         
@@ -411,6 +411,59 @@ public class DBFunction{
                     return false;
                 }
             }
+    }
+
+    /**
+     * Gives recomendations to the user for what song to listen to based on their most listened to genre.
+     * @return true or false depending on if user listening data was found or not
+     * @author Katie Richardson
+     */
+    public boolean getRecommendations(int list_user_id){
+        ResultSet results = null;
+        // Top listened to genre from user
+        String query1 = "SELECT genre.genre_name AS genrename, " +
+            "COUNT(*) AS totalListenCount " +
+            "FROM song " +
+            "JOIN song_genre ON song.song_id = song_genre.song_id " +
+            "JOIN genre ON song_genre.genre_id = genre.genre_id " +
+            "JOIN listens_to ON song.song_id = listens_to.list_song_id " +
+            "WHERE listens_to.list_user_id = ? " +
+            "GROUP BY genre.genre_name " +
+            "ORDER BY totalListenCount DESC LIMIT 1";
+        // Recommend top 10 songs of that genre
+        String query2 = "SELECT song.song_id, song.title, COUNT(listens_to.list_user_id) AS total_listens " +
+            "FROM song JOIN song_genre ON song.song_id = song_genre.song_id " +
+            "LEFT JOIN listens_to ON song.song_id = listens_to.list_song_id " +
+            "JOIN genre on song_genre.genre_id = genre.genre_id " +
+            "WHERE genre.genre_name = ? " +
+            "GROUP BY song.song_id, song.title " +
+            "ORDER BY total_listens DESC LIMIT 10";
+        try(PreparedStatement pdst = connection.prepareStatement(query1);){
+            pdst.setInt(1,list_user_id);
+            results = pdst.executeQuery();
+            if(results.next()) {
+                String genre = results.getString("genrename");
+                PreparedStatement pdstII = connection.prepareStatement(query2);
+                pdstII.setString(1, genre);
+                results = pdstII.executeQuery();
+                ArrayList<String> songs = new ArrayList<>();
+                while(results.next()) {
+                    songs.add(results.getString("title"));
+                }
+                for(int i = 1; i <= songs.size(); i++){
+                    System.out.println(i + ": " + songs.get(i-1));
+                }
+                return true;
+            }
+            else {
+                System.out.println("User has no listening history");
+            }
+            return false;
+        }
+        catch (SQLException e) {
+            System.out.println(e);
+            return false;
+        }
     }
 
 
@@ -860,7 +913,7 @@ public class DBFunction{
 
 
         while(sentinal){
-            System.out.println("Collection    Song     User    Quit");
+            System.out.println("Collection    Song     User    Recommendations     Quit");
             input = scanner.nextLine();
             input.toLowerCase();
             if (input.equals("quit")){
@@ -984,6 +1037,19 @@ public class DBFunction{
                     System.out.println("ID of user to view");
                     int id = scanner.nextInt();
                     test.checkUserProfile(id);
+                }
+            }
+            if (input.equals("recommendations")){
+                System.out.println("Self      Other");
+                String userInput = scanner.nextLine();
+                if(userInput.equals("self")){
+                    test.getRecommendations(currentUser.getId());
+                }
+                if(userInput.equals("other")){
+                    System.out.println("ID of user to see recommendations:");
+                    int id = scanner.nextInt();
+                    scanner.nextLine();
+                    test.getRecommendations(id);
                 }
             }
         }
