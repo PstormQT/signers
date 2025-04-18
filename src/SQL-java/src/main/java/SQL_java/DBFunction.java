@@ -843,11 +843,11 @@ public class DBFunction{
         PreparedStatement query = null;
         ResultSet rs = null;
         try{
-            String getSongs = "SELECT name FROM artist INNER JOIN (SELECT c_artist_id FROM created INNER JOIN (SELECT list_song_id FROM listens_to WHERE list_user_id = ?) AS songs ON created.c_songid = songs.list_song_id GROUP BY c_artist_id ORDER BY COUNT(*) DESC LIMIT 10) AS top_artists ON artist.artist_id = top_artists.c_artist_id";
-            query = this.connection.prepareStatement(getSongs);
+            String getArtists = "SELECT name FROM artist INNER JOIN (SELECT c_artist_id FROM created INNER JOIN (SELECT list_song_id FROM listens_to WHERE list_user_id = ?) AS songs ON created.c_songid = songs.list_song_id GROUP BY c_artist_id ORDER BY COUNT(*) DESC LIMIT 10) AS top_artists ON artist.artist_id = top_artists.c_artist_id";
+            query = this.connection.prepareStatement(getArtists);
             query.setInt(1,user);
             rs = query.executeQuery();
-            System.out.println("Top 10 Songs:");
+            System.out.println("Top 10 Artists:");
             int interval = 1;
             while(rs.next()){
                 System.out.println(interval + ": " + rs.getString(1));
