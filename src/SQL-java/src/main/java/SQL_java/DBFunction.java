@@ -656,12 +656,12 @@ public class DBFunction{
         
         ResultSet data = statement.executeQuery();
 
-        System.out.println("title      listen by follower");
+        System.out.println("title      Listens by follower");
             
             while(data.next()){
                 String songName = data.getString("title");
                 Integer followerListenCount = data.getInt("listenbyfollower");
-                System.out.println(songName + "          " + followerListenCount);
+                System.out.println(songName + "\t\t" + followerListenCount);
             }
         
         return true;
@@ -1096,6 +1096,12 @@ public class DBFunction{
                         for(int i = 0; i<genres.size(); i++){
                             System.out.println((i+1) + ".\t" + genres.get(i));
                         }
+                    }
+                    //TOP SONGS BY FOLLOWED USERS
+                    if(rankingInput.equals("friends") || rankingInput.equals("friends popular") || rankingInput.equals("friends' popular songs"))
+                    {
+                        System.out.println("Top 50 Songs Listened To By Followed Users");
+                        test.topSongFollowByUser(currentUser.getId());
                     }
                 }
 
