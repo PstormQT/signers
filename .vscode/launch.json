@@ -6,6 +6,13 @@
     "configurations": [
         {
             "type": "java",
+            "name": "DBFunction",
+            "request": "launch",
+            "mainClass": "SQL_java.DBFunction",
+            "projectName": "SQL-java"
+        },
+        {
+            "type": "java",
             "name": "hypothesisPLayground",
             "request": "launch",
             "mainClass": "SQL_java.hypothesisPLayground",
