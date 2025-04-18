@@ -107,8 +107,6 @@ public class DBFunction{
         ResultSet results;
         try{
 
-            //TODO: Salting: password + sha256(username) for salted password (hash this string combination)
-
         String query = "SELECT * FROM users WHERE username=? AND password = cast(sha256(convert_to(CONCAT(?, sha256(convert_to(?, 'LATIN1') ) ),'LATIN1')) as varchar(256) )";
         //password = cast(sha256(convert_to((CONCAT(?, sha256(convert_to(?, 'LATIN1')))),'LATIN1')) as varchar(256))";
         
@@ -156,8 +154,6 @@ public class DBFunction{
     public User createUser(String username, String password, String fname, String lname, String email){
         ResultSet results;
         try{
-            //TODO: create salt: done password + shausername
-            //perchance first half of username, password, second half of username?
             String query = "INSERT INTO users (password,creation_date,last_login_date,email,username,fname,lname) VALUES(cast(sha256(convert_to((CONCAT(?, sha256(convert_to(?, 'LATIN1')))),'LATIN1')) as varchar(256)),?,?,?,?,?,?)";
 
             PreparedStatement pdst = connection.prepareStatement(query);
@@ -990,20 +986,34 @@ public class DBFunction{
                 }
 
                 if (songInput.equals("ranking")){
-                    System.out.println("top 50");
-                    songInput = scanner.nextLine();
-                    if (songInput.equals("top 50")) {
-                        System.out.println("Here is the top 50 for this month");
-                        ArrayList<String> top = test.top50month();
-                        for(String title : top){
-                        System.out.println(title);
+                    System.out.println("Recent popular songs\tFriends' popular songs\tGenre montly top");
+                    String rankingInput = scanner.nextLine().toLowerCase();
+                    //TOP 50 OF THE PAST 30 DAYS
+                    if(rankingInput.equals("recent") || rankingInput.equals("recent popular") || rankingInput.equals("recent popular songs")){
+                        /* 
+                        System.out.println("top 50");
+                        songInput = scanner.nextLine();
+                        if (songInput.equals("top 50")) {
+                        */
+                            System.out.println("Here is the top 50 for this month");
+                            ArrayList<String> top = test.top50month();
+                            for(String title : top){
+                            System.out.println(title);
+                            }
+                    }
+                    //TOP 5 GENRE OF MONTH
+                    if(rankingInput.equals("genre") || rankingInput.equals("genre monthly") || rankingInput.equals("genre monthly top")){
+                        System.out.println("Top 5 Genres of the month");
+                        ArrayList<String> genres = test.top5MonthGenre();
+                        for(int i = 0; i<genres.size(); i++){
+                            System.out.println((i+1) + ".\t" + genres.get(i));
                         }
                     }
-
-                
                 }
 
             }
+
+            
             if (input.equals("user")){
                 System.out.println("Follow      Unfollow      View");
                 String userInput = scanner.nextLine();
