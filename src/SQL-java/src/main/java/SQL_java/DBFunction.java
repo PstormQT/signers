@@ -12,7 +12,8 @@ import java.util.ArrayList;
 import java.util.Properties;
 import java.util.Scanner;
 
-import com.jcraft.jsch.*;
+import com.jcraft.jsch.JSch;
+import com.jcraft.jsch.Session;
 
 
 
@@ -661,6 +662,33 @@ public class DBFunction{
         }
     }
 
+    /**
+     * Calculates the most listened to genres in the current calendar month i.e 2025-4-1 -> 2025-4-30, inclusive
+     * @return Each Genre's name, as a string, in an ArrayList
+     * @author Antonio Bicknell <acb9430>
+     */
+    public ArrayList<String> top5MonthGenre(){
+        ResultSet result = null;
+        PreparedStatement pdst = null;
+        ArrayList<String> output = new ArrayList<String>();
+        String query =  "SELECT g.genre_name " +  //, COUNT(l.list_song_id) optional if we want listen count
+                        "FROM genre as g LEFT JOIN song_genre AS sg ON(g.genre_id=sg.genre_id) " + 
+                        "LEFT JOIN listens_to AS l ON(l.list_song_id = sg.song_id)  " + 
+                        "WHERE date_trunc('month',l.date_time_listened) = date_trunc('month', NOW()) " + 
+                        "GROUP BY g.genre_id ORDER BY COUNT(l.list_song_id) DESC LIMIT 5";
+        try{
+           pdst = this.connection.prepareStatement(query);
+           result = pdst.executeQuery(); 
+           while(result.next()){
+                output.add(result.getString(1));
+           }
+           return output;
+        }
+        catch(Exception e){
+            System.out.println(e);
+            return null;
+        }
+    }
 
     public ArrayList<String> top10month(){
         ResultSet result = null;
