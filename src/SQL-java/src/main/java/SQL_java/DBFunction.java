@@ -12,7 +12,8 @@ import java.util.ArrayList;
 import java.util.Properties;
 import java.util.Scanner;
 
-import com.jcraft.jsch.*;
+import com.jcraft.jsch.JSch;
+import com.jcraft.jsch.Session;
 
 
 
@@ -106,8 +107,6 @@ public class DBFunction{
         ResultSet results;
         try{
 
-            //TODO: Salting: password + sha256(username) for salted password (hash this string combination)
-
         String query = "SELECT * FROM users WHERE username=? AND password = cast(sha256(convert_to(CONCAT(?, sha256(convert_to(?, 'LATIN1') ) ),'LATIN1')) as varchar(256) )";
         //password = cast(sha256(convert_to((CONCAT(?, sha256(convert_to(?, 'LATIN1')))),'LATIN1')) as varchar(256))";
         
@@ -155,8 +154,6 @@ public class DBFunction{
     public User createUser(String username, String password, String fname, String lname, String email){
         ResultSet results;
         try{
-            //TODO: create salt: done password + shausername
-            //perchance first half of username, password, second half of username?
             String query = "INSERT INTO users (password,creation_date,last_login_date,email,username,fname,lname) VALUES(cast(sha256(convert_to((CONCAT(?, sha256(convert_to(?, 'LATIN1')))),'LATIN1')) as varchar(256)),?,?,?,?,?,?)";
 
             PreparedStatement pdst = connection.prepareStatement(query);
@@ -749,8 +746,40 @@ public class DBFunction{
         }
     }
 
+    /**
+     * Calculates the most listened to genres in the current calendar month i.e 2025-4-1 -> 2025-4-30, inclusive
+     * @return Each Genre's name, as a string, in an ArrayList
+     * @author Antonio Bicknell <acb9430>
+     */
+    public ArrayList<String> top5MonthGenre(){
+        ResultSet result = null;
+        PreparedStatement pdst = null;
+        ArrayList<String> output = new ArrayList<String>();
+        String query =  "SELECT g.genre_name " +  //, COUNT(l.list_song_id) optional if we want listen count
+                        "FROM genre as g LEFT JOIN song_genre AS sg ON(g.genre_id=sg.genre_id) " + 
+                        "LEFT JOIN listens_to AS l ON(l.list_song_id = sg.song_id)  " + 
+                        "WHERE date_trunc('month',l.date_time_listened) = date_trunc('month', NOW()) " + 
+                        "GROUP BY g.genre_id ORDER BY COUNT(l.list_song_id) DESC LIMIT 5";
+        try{
+           pdst = this.connection.prepareStatement(query);
+           result = pdst.executeQuery(); 
+           while(result.next()){
+                output.add(result.getString(1));
+           }
+           return output;
+        }
+        catch(Exception e){
+            System.out.println(e);
+            return null;
+        }
+    }
 
-    public ArrayList<String> top10month(){
+
+    /**
+     * @return an Arraylist containing the top 50 songs by total listens from the past 30 days
+     * Result can be less than 50 in size, as many songs have 0 listens in the past 30 days
+     */
+    public ArrayList<String> top50month(){
         ResultSet result = null;
         PreparedStatement pdst1 = null;
         ArrayList<String> output = new ArrayList<>();
@@ -898,10 +927,6 @@ public class DBFunction{
     public static void main(String[] args) {
         DBFunction test = new DBFunction();
         Scanner scanner = new Scanner(System.in);
-        ArrayList<String> top = test.top10month();
-        for(String title : top){
-            System.out.println(title);
-        }
         User currentUser = null;
         boolean sentinal = true;
         String input;
@@ -1014,7 +1039,7 @@ public class DBFunction{
                 }
             }
             if (input.equals("song")){
-                System.out.println("listen      search");
+                System.out.println("listen      search         ranking");
                 String songInput = scanner.nextLine();
                 if (songInput.equals("listen")){
                     System.out.println("Please enter song ID");
@@ -1048,7 +1073,35 @@ public class DBFunction{
                     
                 }
 
+                if (songInput.equals("ranking")){
+                    System.out.println("Recent popular songs\tFriends' popular songs\tGenre montly top");
+                    String rankingInput = scanner.nextLine().toLowerCase();
+                    //TOP 50 OF THE PAST 30 DAYS
+                    if(rankingInput.equals("recent") || rankingInput.equals("recent popular") || rankingInput.equals("recent popular songs")){
+                        /* 
+                        System.out.println("top 50");
+                        songInput = scanner.nextLine();
+                        if (songInput.equals("top 50")) {
+                        */
+                            System.out.println("Here is the top 50 for this month");
+                            ArrayList<String> top = test.top50month();
+                            for(String title : top){
+                            System.out.println(title);
+                            }
+                    }
+                    //TOP 5 GENRE OF MONTH
+                    if(rankingInput.equals("genre") || rankingInput.equals("genre monthly") || rankingInput.equals("genre monthly top")){
+                        System.out.println("Top 5 Genres of the month");
+                        ArrayList<String> genres = test.top5MonthGenre();
+                        for(int i = 0; i<genres.size(); i++){
+                            System.out.println((i+1) + ".\t" + genres.get(i));
+                        }
+                    }
+                }
+
             }
+
+            
             if (input.equals("user")){
                 System.out.println("Follow      Unfollow      View");
                 String userInput = scanner.nextLine();
