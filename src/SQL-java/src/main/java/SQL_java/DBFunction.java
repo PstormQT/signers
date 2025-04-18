@@ -690,7 +690,12 @@ public class DBFunction{
         }
     }
 
-    public ArrayList<String> top10month(){
+
+    /**
+     * @return an Arraylist containing the top 50 songs by total listens from the past 30 days
+     * Result can be less than 50 in size, as many songs have 0 listens in the past 30 days
+     */
+    public ArrayList<String> top50month(){
         ResultSet result = null;
         PreparedStatement pdst1 = null;
         ArrayList<String> output = new ArrayList<>();
@@ -989,7 +994,7 @@ public class DBFunction{
                     songInput = scanner.nextLine();
                     if (songInput.equals("top 50")) {
                         System.out.println("Here is the top 50 for this month");
-                        ArrayList<String> top = test.top10month();
+                        ArrayList<String> top = test.top50month();
                         for(String title : top){
                         System.out.println(title);
                         }
