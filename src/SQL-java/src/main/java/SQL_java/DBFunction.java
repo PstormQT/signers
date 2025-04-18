@@ -838,10 +838,6 @@ public class DBFunction{
     public static void main(String[] args) {
         DBFunction test = new DBFunction();
         Scanner scanner = new Scanner(System.in);
-        ArrayList<String> top = test.top10month();
-        for(String title : top){
-            System.out.println(title);
-        }
         User currentUser = null;
         boolean sentinal = true;
         String input;
@@ -954,7 +950,7 @@ public class DBFunction{
                 }
             }
             if (input.equals("song")){
-                System.out.println("listen      search");
+                System.out.println("listen      search         ranking");
                 String songInput = scanner.nextLine();
                 if (songInput.equals("listen")){
                     System.out.println("Please enter song ID");
@@ -986,6 +982,20 @@ public class DBFunction{
                         }
                     }
                     
+                }
+
+                if (songInput.equals("ranking")){
+                    System.out.println("top 50");
+                    songInput = scanner.nextLine();
+                    if (songInput.equals("top 50")) {
+                        System.out.println("Here is the top 50 for this month");
+                        ArrayList<String> top = test.top10month();
+                        for(String title : top){
+                        System.out.println(title);
+                        }
+                    }
+
+                
                 }
 
             }
